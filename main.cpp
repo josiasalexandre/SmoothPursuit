@@ -6,7 +6,15 @@
 #include <MultInputDevice.hpp>
 #include <SingleInputDevice.hpp>
 
+#include <InputVideoDevice.hpp>
+
 int main(int argc, char **argv) {
+
+    std::string filename = "/home/josias/IC/DSP/dsp/Examples/walk.avi";
+
+    InputVideoDevice cam(filename, 10.0);
+
+    cam.run();
 
 
     CircularBuffer<double> ring(MIN_BUFFER_SIZE + 10, 0.0);
