@@ -2,18 +2,21 @@
 #define GENERAL_DEVICE_OUTPUT_INTERFACE_H
 
 #include <vector>
-#include <utility>
+#include <mutex>
 
 #include <BaseDevice.hpp>
 #include <DeviceInput.hpp>
 
 template<typename T>
-class DeviceOutput : virtual public BaseDevice<T> {
+class DeviceOutput : virtual public BaseDevice {
 
     private:
 
         // the external devices inputs are the current device outputs
         std::vector<DeviceInputBufferRef<T>> output;
+
+        // the output mutex
+        std::mutex output_mutex;
 
     public:
 
@@ -24,6 +27,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
         ~DeviceOutput() {
 
             int out_size = output.size();
+
+            // lock the output vector
+            output_mutex.lock();
 
             for (int i = 0; i < out_size; i++) {
 
@@ -37,6 +43,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
                 output[i].second = nullptr;
 
             }
+
+            // unlock the output vector
+            output_mutex.unlock();
 
         }
 
@@ -59,6 +68,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
 
                 int out_size = output.size();
 
+                // lock the output vector
+                output_mutex.lock();
+
                 for (int i = 0; i < out_size; i++) {
 
                     if (dev == output[i]) {
@@ -77,6 +89,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
 
                 }
 
+                // unlock the output vector
+                output_mutex.unlock();
+
             }
 
         }
@@ -87,6 +102,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
             if (nullptr != dev) {
 
                 int out_size = output.size();
+
+                // lock the output vector
+                output_mutex.lock();
 
                 for (int i = 0; i < out_size; i++) {
 
@@ -102,6 +120,9 @@ class DeviceOutput : virtual public BaseDevice<T> {
                     }
 
                 }
+
+                // unlock the output vector
+                output_mutex.unlock();
 
             }
 

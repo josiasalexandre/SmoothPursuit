@@ -2,43 +2,14 @@
 
 #include <MatrixT.hpp>
 #include <CircularBuffer.hpp>
-#include <SingleInputDevice.hpp>
+
 #include <MultInputDevice.hpp>
+#include <SingleInputDevice.hpp>
 
 int main(int argc, char **argv) {
 
-    SingleInputDevice<double> sid1, sid2, sid3, sid5;
-    MultInputDevice<double, 4> mid1;
-    SingleInputDevice<double> *sid4 = new SingleInputDevice<double>();
 
-    mid1.add_signal_source(&sid1);
-    mid1.add_signal_source(&sid2);
-    mid1.add_signal_source(&sid3);
-    mid1.add_signal_source(sid4);
-
-
-    sid1.add_signal_source(&sid2);
-    sid4->add_signal_source(&sid1);
-    sid3.add_signal_source(sid4);
-
-    sid3.connect(&sid5);
-    sid1.remove_signal_source(&sid3);
-    delete sid4;
-    sid1.remove_signal_source(&sid2);
-
-//     DeviceInput<double> *d = static_cast<DeviceInput<double> *>(&sid1);
-//
-//     DeviceOutput<double> *out = static_cast<DeviceOutput<double> *>(&sid2);
-//
-//     out->add_output(d);
-//
-//     sid1.add_signal_source(&sid2);
-//     sid1.remove_signal_source(&sid2);
-//     sid1.add_signal_source(&sid3);
-//
-//     out->add_output(d);
-
-    CircularBuffer<double> ring(MIN_BUFFER_SIZE + 10);
+    CircularBuffer<double> ring(MIN_BUFFER_SIZE + 10, 0.0);
 
     for (int j = 0; j < MIN_BUFFER_SIZE + 11; j++) {
         std::cout << ring.pop() - 1 << " ";

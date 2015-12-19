@@ -1,11 +1,6 @@
 #ifndef GENERAL_BASE_DEVICE_H
 #define GENERAL_BASE_DEVICE_H
 
-#include <vector>
-
-#include <CircularBuffer.hpp>
-
-template<typename T>
 class BaseDevice {
 
     public:
