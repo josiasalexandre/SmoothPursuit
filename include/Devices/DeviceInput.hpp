@@ -4,6 +4,7 @@
 #include <utility>
 
 #include <CircularBuffer.hpp>
+
 #include <BaseDevice.hpp>
 
 template<typename T>
@@ -19,6 +20,7 @@ class DeviceInput : virtual public BaseDevice {
 
         // disconnect the a signal source from the current inputs
         virtual void disconnect_signal_source(BaseDevice *) =0;
+
 };
 
 template<typename T>

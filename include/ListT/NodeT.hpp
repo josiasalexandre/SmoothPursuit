@@ -28,7 +28,7 @@ class Node {
                 delete prev;
             }
 
-            if (nullptr == next){
+            if (nullptr != next){
                 delete next;
             }
 

@@ -4,6 +4,6 @@
 #include <DeviceInput.hpp>
 
 template<typename T>
-class OutputSignalDevice : DeviceInput<T> {};
+class OutputSignalDevice : virtual public DeviceInput<T> {};
 
 #endif

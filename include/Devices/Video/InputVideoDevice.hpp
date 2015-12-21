@@ -1,11 +1,10 @@
 #ifndef INPUT_VIDEO_DEVICE_H
 #define INPUT_VIDEO_DEVICE_H
 
-#include <QWidget>
+#include <unistd.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/video.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <InputSignalDevice.hpp>
 
@@ -25,11 +24,10 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
         // the update rate
         unsigned int rate;
 
-
     public:
 
         // basic constructor - camera id
-        InputVideoDevice(int id) : video(id), rate(30) {
+        InputVideoDevice(int id) : video(id), rate(1000*1000/30) {
 
             if (!video.isOpened()) {
 
@@ -41,7 +39,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
         }
 
         // basic constructor, now with fps
-        InputVideoDevice(int id, float fps) : video(id), rate(1000/fps) {
+        InputVideoDevice(int id, float fps) : video(id), rate(1000*1000/fps) {
 
             if (!video.isOpened()) {
 
@@ -53,7 +51,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
         }
 
         // basic constructor- filename
-        InputVideoDevice(const std::string filename, float fps) : video(filename), rate(1000/fps) {
+        InputVideoDevice(const std::string filename, float fps) : video(filename), rate(1000*1000/fps) {
 
             if (!video.isOpened()) {
 
@@ -81,35 +79,41 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
             // get the first frame
             video >> frame;
 
-            // the keyboard char
-            int key = 0;
+            while(!frame.empty()) {
 
-            // the named window
-            cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
+                // lock the output vector
+                DeviceOutput<cv::Mat>::output_mutex.lock();
 
-            while(!frame.empty() && (char) key != 'q') {
+                // send the current image to the output
+                unsigned int out_size = DeviceOutput<cv::Mat>::output.size();
 
-                // draw the image
-                cv::imshow("frame", frame);
+                if (0 < out_size) {
 
-                // send to external devices
+                    for (int i = 0; i < out_size; i++) {
 
-                // wait for the input
-                key = cv::waitKey(rate);
+                        // send the image frames
+                        DeviceOutput<cv::Mat>::output[i].first->push(frame);
 
-                // get next frame
+                        //
+                        DeviceOutput<cv::Mat>::output[i].second->run();
+
+                    }
+
+                }
+
+                // based on the fps
+                usleep(rate);
+
+                // unlock the output vector
+                DeviceOutput<cv::Mat>::output_mutex.unlock();
+
+                // get the next frame
                 video >> frame;
 
             }
 
         }
 
-
-            // connect two devices
-        virtual void connect(BaseDevice *) {};
-
-        // disconnect two devices
-        virtual void disconnect(BaseDevice *) {};
 };
 
 #endif

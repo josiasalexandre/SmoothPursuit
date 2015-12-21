@@ -1,21 +1,22 @@
 #include <iostream>
 
+#include <QtGui/QApplication>
+
 #include <MatrixT.hpp>
 #include <CircularBuffer.hpp>
+#include <ListT.hpp>
 
-#include <MultInputDevice.hpp>
-#include <SingleInputDevice.hpp>
-
-#include <InputVideoDevice.hpp>
+#include <DRandomInputDevice.hpp>
+#include <AddSignalDevice.hpp>
+#include <DSPSystem.hpp>
 
 int main(int argc, char **argv) {
 
-    std::string filename = "/home/josias/IC/DSP/dsp/Examples/walk.avi";
+    DSPSystem system;
 
-    InputVideoDevice cam(filename, 10.0);
+    system.build_system();
 
-    cam.run();
-
+    system.run();
 
     CircularBuffer<double> ring(MIN_BUFFER_SIZE + 10, 0.0);
 
@@ -58,8 +59,12 @@ int main(int argc, char **argv) {
     // std::cout << m1.at(0,0) << std::endl;
     // std::cout << "Hello, world!" << std::endl;
 
+
+
+    std::cout << std::endl << "next 2:" << std::endl;
     if (m6.isEmpty() || m6.isSquareMatrix() || m6.sameDimensions(m2)) {
         return 1;
     }
     return 0;
+
 }

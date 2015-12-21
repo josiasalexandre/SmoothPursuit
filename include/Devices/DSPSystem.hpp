@@ -1,24 +1,208 @@
 #ifndef DSP_SYSTEM_H
 #define DSP_SYSTEM_H
 
-#include "ListT.hpp"
-#include "BaseDevice.hpp"
+#include <ListT.hpp>
 
-template<typename T>
+#include <BaseDevice.hpp>
+#include <DRandomInputDevice.hpp>
+#include <AddSignalDevice.hpp>
+
+
 class DSPSystem {
 
-    // the nodes list
-    List<BaseDevice<T>*> idle, busy;
+    // the devices lists
+    List<BaseDevice *> input_devices, output_devices;
+    List<BaseDevice *> iddle_devices, on_devices, running_devices;
 
     public:
 
         // the basic constructor
-        DSPSystem() {
+        DSPSystem () {}
+
+        // the basic destructor
+        ~DSPSystem () {
+
+            BaseDevice *dev = nullptr;
+
+            // destroy all input_devices
+            while(!input_devices.empty()) {
+
+                // get the first node element
+                dev = input_devices.pop_front();
+
+                if (nullptr != dev) {
+
+                    // delete the node
+                    delete dev;
+
+                }
+
+            }
+
+            // destroy all the iddle_dsp
+            while(!iddle_devices.empty()) {
+
+                // get the first node element
+                dev = iddle_devices.pop_front();
+
+                if (nullptr != dev) {
+
+                    // delete the node
+                    delete dev;
+
+                }
+
+            }
+
+            // destroy all the running_dsp
+            while(!on_devices.empty()) {
+
+                // get the first node element
+                dev = on_devices.pop_front();
+
+                if (nullptr != dev) {
+
+                    // delete the node
+                    delete dev;
+
+                }
+
+            }
+
+            // destroy all the running_devices
+            while(!running_devices.empty()) {
+
+                // get the first node element
+                dev = running_devices.pop_front();
+
+                if (nullptr != dev) {
+
+                    // delete the node
+                    delete dev;
+
+                }
+
+            }
+
+            // destroy all the output_devices
+            while(!output_devices.empty()) {
+
+                // get the first element node
+                dev = output_devices.pop_front();
+
+                if (nullptr != dev) {
+
+                    // delete the node
+                    delete dev;
+
+                }
+
+            }
+
+            dev = nullptr;
 
         }
 
+
+        void build_system() {
+
+            /* TODO */
+        }
+
         // the main method
-        void run() {};
+        void run() {
+
+            int i = 90;
+
+            while(i < 100) {
+
+                BaseDevice *dev = nullptr;
+
+                // run all the outputs
+                while(output_devices.iterator()) {
+
+                    dev = output_devices.current_element();
+
+                    if (nullptr != dev) {
+                        dev->run();
+                    }
+
+                }
+
+                // run all the iddle_devices
+                while(!iddle_devices.empty()) {
+
+                    dev = iddle_devices.pop_front();
+
+                    if (nullptr != dev) {
+
+                        dev->run();
+
+                        // append to running_devices
+                        running_devices.push_back(dev);
+
+                    }
+
+                }
+
+                // run all the on_devices
+                while(!on_devices.empty()) {
+
+                    dev = on_devices.pop_front();
+
+                    if (nullptr != dev) {
+
+                        dev->run();
+
+                        // append to running_devices
+                        running_devices.push_back(dev);
+
+                    }
+
+                }
+
+                // run all the input_devices
+                while(input_devices.iterator()) {
+
+                    dev = input_devices.current_element();
+
+                    if (nullptr != dev) {
+                        dev->run();
+                    }
+
+
+                }
+
+                // return the all the running devices to appropriate lists
+                while (!running_devices.empty()) {
+
+                    dev = running_devices.pop_front();
+
+                    if (nullptr != dev) {
+
+                        if (Device_ON == dev->get_device_status()) {
+
+                            // append to on_devices
+                            on_devices.push_back(dev);
+
+                        } else {
+
+                            // append to iddle_devices
+                            iddle_devices.push_back(dev);
+
+                        }
+
+                    }
+
+                }
+
+                // delete the dev pointer
+                dev = nullptr;
+
+                i += 1;
+            }
+
+        };
 
 };
 

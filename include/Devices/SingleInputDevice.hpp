@@ -4,18 +4,18 @@
 #include <DeviceInput.hpp>
 #include <DeviceOutput.hpp>
 
-template<typename T>
-class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOutput<T> {
+template<typename A, typename B>
+class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutput<B> {
 
     private:
 
         // the device input buffer
-        DeviceInputBuffer<T> input;
+        DeviceInputBuffer<A> input;
 
     public:
 
         // basic constructor
-        SingleInputDevice(T v_null) : DeviceOutput<T>::DeviceOutput(v_null), input (v_null, nullptr) {}
+        SingleInputDevice(A v_null) : input (v_null, nullptr) {}
 
         // basic destructor
         ~SingleInputDevice() {
@@ -23,7 +23,7 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
             if (nullptr != input.second) {
 
                 // build the DeviceInputBufferRef
-                DeviceInputBufferRef<T> buffer(&input.first, static_cast<DeviceInput<T> *>(this));
+                DeviceInputBufferRef<A> buffer(&input.first, static_cast<DeviceInput<A> *>(this));
 
                 // remove the current device's input from the external device's output'
                 input.second->remove_output(buffer);
@@ -41,10 +41,10 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
+                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
 
                 // try to dowcast to DeviceInput pointer
-                DeviceInput<T> *in = dynamic_cast<DeviceInput<T> *>(dev);
+                DeviceInput<B> *in = dynamic_cast<DeviceInput<B> *>(dev);
 
                 if (nullptr != in) {
 
@@ -67,11 +67,12 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
         virtual void disconnect(BaseDevice *dev) {
 
             if (nullptr != dev && this != dev) {
+
                 // try to disconnect the external device from this current input
                 remove_signal_source(dev);
 
                 // try to dowcast to DeviceInput pointer
-                DeviceInput<T> *in = dynamic_cast<DeviceInput<T> *>(dev);
+                DeviceInput<B> *in = dynamic_cast<DeviceInput<B> *>(dev);
 
                 if (nullptr != in) {
 
@@ -92,12 +93,12 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
+                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
 
                 if (nullptr != out) {
 
                     // build the DeviceInputBufferRef
-                    DeviceInputBufferRef<T> buffer(&input.first, static_cast<DeviceInput<T> *>(this));
+                    DeviceInputBufferRef<A> buffer(&input.first, static_cast<DeviceInput<A> *>(this));
 
                     if (nullptr != input.second) {
 
@@ -123,12 +124,12 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
+                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
 
                 if (out == input.second) {
 
                     // build the DeviceInputBufferRef
-                    DeviceInputBufferRef<T> buffer(&input.first, this);
+                    DeviceInputBufferRef<A> buffer(&input.first, this);
 
                     // remove the current device's input from the external device's output'
                     input.second->remove_output(buffer);
@@ -148,7 +149,7 @@ class SingleInputDevice : virtual public DeviceInput<T>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
+                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
 
                 if (out == input.second) {
 

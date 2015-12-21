@@ -4,13 +4,12 @@
 #include <vector>
 #include <mutex>
 
-#include <BaseDevice.hpp>
 #include <DeviceInput.hpp>
 
 template<typename T>
 class DeviceOutput : virtual public BaseDevice {
 
-    private:
+    protected:
 
         // the external devices inputs are the current device outputs
         std::vector<DeviceInputBufferRef<T>> output;
@@ -83,7 +82,7 @@ class DeviceOutput : virtual public BaseDevice {
                         output.erase(output.begin() + i);
 
                         // remove just the first one
-                        return;
+                        break;
 
                     }
 
@@ -127,6 +126,9 @@ class DeviceOutput : virtual public BaseDevice {
             }
 
         }
+
+        // the main device method
+        virtual void run() = 0;
 
 };
 

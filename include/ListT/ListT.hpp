@@ -2,6 +2,7 @@
 #define DOUBLY_LINKED_LIST_H
 
 #include "NodeT.hpp"
+#include <stdio.h>
 
 template<typename T>
 class List {
@@ -13,6 +14,12 @@ class List {
 
         // the list size
         unsigned int size;
+
+        // the iteration flag
+        bool iter;
+
+        // iterator pointer
+        Node<T> *iterNode;
 
         // private methods
         // append a node to the end
@@ -63,7 +70,7 @@ class List {
         // find a node
         Node<T>* find_node(T e) {
 
-            Node<T> aux = first;
+            Node<T> *aux = first;
 
             // iterate over the entire list
             while(aux != nullptr) {
@@ -88,7 +95,6 @@ class List {
         // remove a node
         void remove_node(Node<T> *n) {
 
-            return;
             // update the current node pointer
             if (n == current) {
                 current = current->next;
@@ -129,6 +135,71 @@ class List {
 
             // update the list size
             size -= 1;
+
+        }
+
+        // efficient first node removal
+        void remove_first_node() {
+
+            if(nullptr != first) {
+
+                // update
+                Node<T> *tmp = first;
+
+                first = first->next;
+
+                if(nullptr != first) {
+
+                    first->prev = nullptr;
+
+                }
+
+                if (tmp == current) {
+
+                    current = current->next;
+
+                }
+
+                tmp->next = nullptr;
+                tmp->prev = nullptr;
+
+                delete tmp;
+
+                size -= 1;
+
+            }
+        }
+
+        // efficient last node removal
+        void remove_last_node() {
+
+            if(nullptr != last) {
+
+                // update
+                Node<T> *tmp = last;
+
+                last = last->prev;
+
+                if(nullptr != last) {
+
+                    last->next = nullptr;
+
+                }
+
+                if (tmp == current) {
+
+                    current = current->next;
+
+                }
+
+                tmp->prev = nullptr;
+                tmp->next = nullptr;
+
+                delete tmp;
+
+                size -= 1;
+
+            }
 
         }
 
@@ -177,12 +248,14 @@ class List {
     public:
 
         // the basic constructor
-        List() : first(nullptr), last(nullptr), current(nullptr), size(0) {}
+        List() : first(nullptr), last(nullptr), current(nullptr), size(0), iter(false), iterNode(nullptr) {}
 
         // the basic destructor
         ~List() {
 
             Node<T> *aux;
+
+            iterNode = nullptr;
 
             // reset the current pointer to the first one
             current = first;
@@ -218,7 +291,7 @@ class List {
         }
 
         // is empty?
-        bool isEmpty() {
+        bool empty() {
             return (0 == size);
         }
 
@@ -313,17 +386,68 @@ class List {
         /* DANGER */
         // get the current element
         T current_element() {
+
             return current->element;
+        }
+
+        // just a simple iteration trick
+        bool iterator() {
+
+            if (0 < size) {
+
+                if (!iter) {
+
+                    iter = true;
+                    iterNode = first;
+
+                }
+
+                if (nullptr != iterNode) {
+
+                    current = iterNode;
+
+                    iterNode = iterNode->next;
+
+                    return true;
+
+                } else {
+
+                    iter = false;
+                    current = first;
+
+                    return false;
+
+                }
+
+            } else {
+
+                return false;
+
+            }
+
         }
 
         /* DANGER */
         // pop out the first element
-        T pop() {
+        T pop_front() {
 
             T e = first->element;
 
             // remove the first node
-            remove_node(first);
+            remove_first_node();
+
+            return e;
+
+        }
+
+        /* DANGER */
+        // pop out the last element
+        T pop_back() {
+
+            T e = last->element;
+
+            // remove the first node
+            remove_last_node();
 
             return e;
 

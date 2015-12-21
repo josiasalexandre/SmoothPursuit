@@ -87,6 +87,7 @@ class CircularBuffer {
         // push new element
         void push(T e) {
 
+            // verify if we can push something at the next position
             if ((head + 1) == tail || (head + 1 == size && 0 == tail)) {
 
                 // insert the new element at the head position but dont increment the head
@@ -94,7 +95,7 @@ class CircularBuffer {
 
             } else {
 
-                // insert the new element at the head position
+                // insert the new element at the head position and increments the head index
                 buffer[head++] = e;
 
                 // verify the limit
@@ -163,6 +164,14 @@ class CircularBuffer {
             null_value = v_null;
 
         }
+
+        // get the current null value
+        T get_null_value() {
+
+            return null_value;
+
+        }
+
 };
 
 #endif

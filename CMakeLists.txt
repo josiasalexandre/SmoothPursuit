@@ -1,26 +1,26 @@
-cmake_minimum_required(VERSION 2.8.11)
-
 project(dsp)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
+cmake_minimum_required(VERSION 2.6)
 
 find_package(OpenCV REQUIRED)
-find_package(Qt5Widgets REQUIRED)
+find_package(Qt4 REQUIRED)
 
 add_executable(dsp main.cpp)
-
-target_link_libraries(dsp Qt5::Widgets)
 
 include_directories(
     include/MatrixT/
     include/CircularBuffer/
     include/Devices/
     include/Devices/Video/
+    include/Devices/Image/
+    include/Devices/Math/
     include/ListT/
 )
 
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
+
 target_link_libraries(dsp ${OpenCV_LIBS})
+target_link_libraries(dsp ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 
 install(TARGETS dsp RUNTIME DESTINATION bin)
 
