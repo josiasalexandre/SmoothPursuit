@@ -1,6 +1,8 @@
 #ifndef CIRCULAR_BUFFER_H
 #define CIRCULAR_BUFFER_H
 
+#include <mutex>
+
 #define MIN_BUFFER_SIZE 64
 #define MAX_BUFFER_SIZE 1024
 
@@ -12,8 +14,8 @@ class CircularBuffer {
         // our circular buffer
         T *buffer;
 
-        // the buffer size
-        unsigned int size;
+        // the buffer max_length
+        unsigned int max_length;
 
         // the head and tail pointers
         unsigned int head, tail;
@@ -21,13 +23,16 @@ class CircularBuffer {
         // the supplied null value reference
         T null_value;
 
+        // the buffer acess mutex
+        std::mutex buffer_mutex;
+
     public:
 
         // basic constructor withoud the null value param
-        CircularBuffer() : size(MIN_BUFFER_SIZE), head(0), tail(0) {
+        CircularBuffer() : max_length(MIN_BUFFER_SIZE), head(0), tail(0) {
 
             // allocates the buffer
-            buffer = new T[size]();
+            buffer = new T[max_length]();
 
             if (nullptr == buffer) {
 
@@ -38,10 +43,10 @@ class CircularBuffer {
         }
 
         // basic constructor
-        CircularBuffer(T v_null) : size(MIN_BUFFER_SIZE), head(0), tail(0), null_value(v_null) {
+        CircularBuffer(T v_null) : max_length(MIN_BUFFER_SIZE), head(0), tail(0), null_value(v_null) {
 
             // allocates the buffer
-            buffer = new T[size]();
+            buffer = new T[max_length]();
 
             if (nullptr == buffer) {
 
@@ -52,24 +57,49 @@ class CircularBuffer {
         }
 
         // another basic constructor
-        CircularBuffer(unsigned int buffer_size, T v_null) : size(buffer_size), head(0), tail(0), null_value(v_null) {
+        CircularBuffer(unsigned int buffer_max_length, T v_null) : max_length(buffer_max_length), head(0), tail(0), null_value(v_null) {
 
-            // verify buffer size
-            if (MIN_BUFFER_SIZE > size) {
+            // verify buffer max_length
+            if (MIN_BUFFER_SIZE > max_length) {
 
-                size = MIN_BUFFER_SIZE;
+                max_length = MIN_BUFFER_SIZE;
 
-            } else if (MAX_BUFFER_SIZE < size) {
+            } else if (MAX_BUFFER_SIZE < max_length) {
 
-                size = MAX_BUFFER_SIZE;
+                max_length = MAX_BUFFER_SIZE;
 
             }
 
             // allocates the buffer
-            buffer = new T[size]();
+            buffer = new T[max_length]();
             if (nullptr == buffer) {
                 throw std::bad_alloc();
             }
+
+        }
+
+        // copy constructor
+        CircularBuffer(const CircularBuffer<T> &cb) : buffer(nullptr) {
+
+            // lock the external circular buffer
+            cb.buffer_mutex.lock();
+
+            // copy the values
+            max_length = cb.max_length;
+            head = tail = 0;
+            null_value = cb.null_value;
+
+             // allocates the buffer
+            buffer = new T[max_length]();
+
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
+
+            // unlock the external circular buffer
+            cb.buffer_mutex.unlock();
 
         }
 
@@ -87,8 +117,11 @@ class CircularBuffer {
         // push new element
         void push(T e) {
 
+            // lock the buffer
+            buffer_mutex.lock();
+
             // verify if we can push something at the next position
-            if ((head + 1) == tail || (head + 1 == size && 0 == tail)) {
+            if ((head + 1) == tail || (head + 1 == max_length && 0 == tail)) {
 
                 // insert the new element at the head position but dont increment the head
                 buffer[head] = e;
@@ -99,7 +132,7 @@ class CircularBuffer {
                 buffer[head++] = e;
 
                 // verify the limit
-                if (head >= size) {
+                if (head >= max_length) {
 
                     //reset
                     head = 0;
@@ -108,52 +141,105 @@ class CircularBuffer {
 
             }
 
+            // unlock the buffer
+            buffer_mutex.unlock();
+
         }
 
         // pop new element
         T pop() {
 
+            T e = null_value;
+
+            // lock the buffer
+            buffer_mutex.lock();
+
             // is empty?
-            if (tail == head) {
+            if (tail != head) {
 
-                return null_value;
+                // get the element at the tail position
+                e = buffer[tail++];
+
+                // verify the limit
+                if (max_length <= tail) {
+
+                    //reset
+                    tail = 0;
+                }
 
             }
 
-            // get the element at the tail position
-            T e = buffer[tail++];
+            // unlock the buffer
+            buffer_mutex.unlock();
 
-            // verify the limit
-            if (size <= tail) {
-
-                //reset
-                tail = 0;
-            }
-
-            //
             return e;
 
         }
 
-        // the circular buffer size
-        unsigned int getSize() {
+        // get the current element (tail index)
+        T get_current() {
 
-            return size;
+            T e = null_value;
+
+            // lock the buffer
+            buffer_mutex.lock();
+
+
+            // is empty?
+            if (tail != head) {
+
+                // get the element at the tail position
+                e = buffer[tail];
+
+            }
+
+            // unlock the buffer
+            buffer_mutex.unlock();
+
+            return e;
+
+        }
+
+        // the circular buffer max_length
+        unsigned int get_length() {
+
+            return max_length;
 
         }
 
         // is empty?
         bool empty() {
 
+            bool status;
+
+            // lock the buffer
+            buffer_mutex.lock();
+
+            status = (head == tail);
+
+            // unlock the buffer
+            buffer_mutex.unlock();
+
             // if head and tail are equal then this buffer is empty
-            return head == tail;
+            return status;
 
         }
 
         // is this ring buffer really full?
         bool full() {
 
-            return ((head + 1) == tail || (head + 1 == size && 0 == tail));
+            bool status;
+
+            // lock the buffer
+            buffer_mutex.lock();
+
+            status = ((head + 1) == tail || (head + 1 == max_length && 0 == tail));
+
+            // unlock the buffer
+            buffer_mutex.unlock();
+
+            // if head and tail are equal then this buffer is empty
+            return status;
 
         }
 
@@ -169,6 +255,13 @@ class CircularBuffer {
         T get_null_value() {
 
             return null_value;
+
+        }
+
+        // get the queue size
+        unsigned int get_size() {
+
+            return std::abs(head - tail);
 
         }
 

@@ -7,12 +7,20 @@
 template<typename A, typename B>
 class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutput<B> {
 
-    private:
+    protected:
 
         // the device input buffer
         DeviceInputBuffer<A> input;
 
     public:
+
+        // basic Constructor
+        SingleInputDevice() {
+
+            // set the input pointer to null
+            input.second = nullptr;
+
+        }
 
         // basic constructor
         SingleInputDevice(A v_null) : input (v_null, nullptr) {}

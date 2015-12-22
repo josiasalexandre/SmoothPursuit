@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include <QtGui/QApplication>
-
 #include <MatrixT.hpp>
 #include <CircularBuffer.hpp>
 #include <ListT.hpp>
@@ -10,12 +8,15 @@
 #include <AddSignalDevice.hpp>
 #include <DSPSystem.hpp>
 
+#include <OpticalFlowCPUDevice.hpp>
+
 int main(int argc, char **argv) {
 
     DSPSystem system;
 
     system.build_system();
 
+    cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
     system.run();
 
     CircularBuffer<double> ring(MIN_BUFFER_SIZE + 10, 0.0);

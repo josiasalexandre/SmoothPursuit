@@ -130,6 +130,34 @@ class DeviceOutput : virtual public BaseDevice {
         // the main device method
         virtual void run() = 0;
 
+        // publish the result to the output
+        virtual void send(const T &result) {
+
+            // lock the output mutex
+            output_mutex.lock();
+
+            if (0 < output.size()) {
+
+
+                // the output size
+                int out_size = output.size();
+
+                for (int i = 0; i < out_size; i++) {
+
+                    // send
+                    output[i].first->push(result);
+
+                }
+
+
+
+            }
+
+            // unlock the output mutex
+            output_mutex.unlock();
+
+        }
+
 };
 
 template<typename T>

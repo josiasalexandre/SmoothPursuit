@@ -7,8 +7,9 @@
 #include <opencv2/video/video.hpp>
 
 #include <InputSignalDevice.hpp>
+#include <VideoSignalDevice.hpp>
 
-class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
+class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtual VideoSignalDevice {
 
     private:
 
@@ -27,7 +28,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
     public:
 
         // basic constructor - camera id
-        InputVideoDevice(int id) : video(id), rate(1000*1000/30) {
+        InputVideoDevice(int id) : video(id) {
 
             if (!video.isOpened()) {
 
@@ -35,11 +36,13 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
                 throw std::invalid_argument("invalid device id");
 
             }
+
+            rate = 1e6/30.0;
 
         }
 
         // basic constructor, now with fps
-        InputVideoDevice(int id, float fps) : video(id), rate(1000*1000/fps) {
+        InputVideoDevice(int id, float fps) : video(id) {
 
             if (!video.isOpened()) {
 
@@ -48,10 +51,18 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
 
             }
 
+            if (0.0 == fps) {
+
+                fps = 30;
+
+            }
+
+            rate = 1e6/fps;
+
         }
 
         // basic constructor- filename
-        InputVideoDevice(const std::string filename, float fps) : video(filename), rate(1000*1000/fps) {
+        InputVideoDevice(const std::string filename, float fps) : video(filename) {
 
             if (!video.isOpened()) {
 
@@ -59,6 +70,14 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
                 throw std::invalid_argument("unable to open the file");
 
             }
+
+            if (0.0 == fps) {
+
+                fps = 30;
+
+            }
+
+            rate = 1e6/fps;
 
         }
 
@@ -79,7 +98,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
             // get the first frame
             video >> frame;
 
-            while(!frame.empty()) {
+            if(!frame.empty()) {
 
                 // lock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.lock();
@@ -94,23 +113,24 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat> {
                         // send the image frames
                         DeviceOutput<cv::Mat>::output[i].first->push(frame);
 
-                        //
-                        DeviceOutput<cv::Mat>::output[i].second->run();
-
                     }
 
                 }
 
                 // based on the fps
-                usleep(rate);
+                // usleep(rate);
 
                 // unlock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.unlock();
 
-                // get the next frame
-                video >> frame;
-
             }
+
+        }
+
+        // get the frame rate
+        virtual float get_fps() {
+
+            return (float) 1e6/((float) rate);
 
         }
 

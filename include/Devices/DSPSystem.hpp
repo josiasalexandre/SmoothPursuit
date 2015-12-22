@@ -6,6 +6,8 @@
 #include <BaseDevice.hpp>
 #include <DRandomInputDevice.hpp>
 #include <AddSignalDevice.hpp>
+#include <InputVideoDevice.hpp>
+#include <OpticalFlowCPUDevice.hpp>
 
 
 class DSPSystem {
@@ -103,20 +105,31 @@ class DSPSystem {
 
         }
 
-
         void build_system() {
 
             /* TODO */
+            // BaseDevice *video = new InputVideoDevice("/home/josias/IC/DSP/dsp/Examples/walk.avi", 10);
+            BaseDevice *video = new InputVideoDevice(0, 10);
+
+            BaseDevice *optical_flow = new OpticalFlowCPUDevice();
+            optical_flow->update_status(Device_ON);
+
+            video->connect(optical_flow);
+
+            input_devices.push_back(video);
+            on_devices.push_back(optical_flow);
+
+
         }
 
         // the main method
         void run() {
 
-            int i = 90;
+            int i = 0;
 
-            while(i < 100) {
+            BaseDevice *dev = nullptr;
 
-                BaseDevice *dev = nullptr;
+            while(i < 300) {
 
                 // run all the outputs
                 while(output_devices.iterator()) {
@@ -167,7 +180,9 @@ class DSPSystem {
                     dev = input_devices.current_element();
 
                     if (nullptr != dev) {
+
                         dev->run();
+
                     }
 
 
