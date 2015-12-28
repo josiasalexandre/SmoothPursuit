@@ -19,7 +19,7 @@ class FoveaDevice :
     private:
 
         // the rectangle
-        cv::Rect retina;
+        cv::Rect fovea;
 
         // the translation
         cv::Point2f translation;
@@ -46,8 +46,8 @@ class FoveaDevice :
 
             if (cv::EVENT_LBUTTONDBLCLK == event) {
 
-                retina.x = x - 50;
-                retina.y = y - 50;
+                fovea.x = x - 50;
+                fovea.y = y - 50;
 
                 selected = true;
 
@@ -80,7 +80,7 @@ class FoveaDevice :
 
                 temp_window = frame.clone();
 
-                cv::rectangle(temp_window, retina, cv::Scalar(0, 255, 0));
+                cv::rectangle(temp_window, fovea, cv::Scalar(0, 255, 0));
 
                 cv::imshow("select", temp_window);
 
@@ -88,13 +88,13 @@ class FoveaDevice :
 
                 if (43 == keyboard) {
 
-                    retina.width += 1;
-                    retina.height += 1;
+                    fovea.width += 1;
+                    fovea.height += 1;
 
                 } else if (45 == keyboard) {
 
-                    retina.width -= 1;
-                    retina.height -= 1;
+                    fovea.width -= 1;
+                    fovea.height -= 1;
 
                 }
 
@@ -107,7 +107,7 @@ class FoveaDevice :
     public:
 
         // basic constructor
-        FoveaDevice() : first_time(true), retina(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(30.0), dt(1.0/30.0), rate(1000.0/30.0) {}
+        FoveaDevice() : first_time(true), fovea(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(30.0), dt(1.0/30.0), rate(1000.0/30.0) {}
 
         // basic destructor
         ~FoveaDevice() {
@@ -207,27 +207,27 @@ class FoveaDevice :
                     // get the translation command
                     translation += velocity_input.first.pop()*dt;
 
-                    // move the retina
-                    retina.x += (int) translation.x;
-                    retina.y += (int) translation.y;
+                    // move the fovea
+                    fovea.x += (int) translation.x;
+                    fovea.y += (int) translation.y;
 
-                    if (1 > retina.x) {
+                    if (1 > fovea.x) {
 
-                        retina.x = 1;
+                        fovea.x = 1;
 
-                    } else if (retina.x > frame.cols - 101) {
+                    } else if (fovea.x > frame.cols - 101) {
 
-                        retina.x = frame.cols - 101;
+                        fovea.x = frame.cols - 101;
 
                     }
 
-                    if (1 > retina.y) {
+                    if (1 > fovea.y) {
 
-                        retina.y = 1;
+                        fovea.y = 1;
 
-                    } else if (retina.y > frame.rows - 101) {
+                    } else if (fovea.y > frame.rows - 101) {
 
-                        retina.y = frame.rows - 101;
+                        fovea.y = frame.rows - 101;
 
                     }
 
@@ -236,21 +236,21 @@ class FoveaDevice :
 
 
                 // crop
-                cropped_image = frame(retina).clone();
+                cropped_image = frame(fovea).clone();
 
                 cv::Point l1, l2, l3, l4;
 
-                l1.x = retina.x + 40;
-                l1.y = retina.y + 50;
+                l1.x = fovea.x + 40;
+                l1.y = fovea.y + 50;
 
-                l2.x = retina.x + 60;
-                l2.y = retina.y + 50;
+                l2.x = fovea.x + 60;
+                l2.y = fovea.y + 50;
 
-                l3.x = retina.x + 50;
-                l3.y = retina.y + 40;
+                l3.x = fovea.x + 50;
+                l3.y = fovea.y + 40;
 
-                l4.x = retina.x + 50;
-                l4.y = retina.y + 60;
+                l4.x = fovea.x + 50;
+                l4.y = fovea.y + 60;
 
                 cv::line(frame, l1, l2, cv::Scalar(0,255,0));
                 cv::line(frame, l3, l4, cv::Scalar(0,255,0));
