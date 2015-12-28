@@ -5,10 +5,11 @@
 
 #include <BaseDevice.hpp>
 #include <DRandomInputDevice.hpp>
-#include <AddSignalDevice.hpp>
+#include <AddSignalsDevice.hpp>
 #include <InputVideoDevice.hpp>
 #include <OpticalFlowCPUDevice.hpp>
-
+#include <RetinaDevice.hpp>
+#include <LowPassExponencialDevice.hpp>
 
 class DSPSystem {
 
@@ -24,9 +25,46 @@ class DSPSystem {
         // the basic destructor
         ~DSPSystem () {
 
-            BaseDevice *dev = nullptr;
 
-            // destroy all input_devices
+        }
+
+        void build_system() {
+
+            /* TODO */
+            /*
+             *  We should build some Parser and get the configuration form an external file (XML? Json?)
+             *
+             */
+            BaseDevice *video = new InputVideoDevice("../Examples/ball.avi", 30);
+            //BaseDevice *video = new InputVideoDevice("../Examples/walk.avi", 10);
+            // BaseDevice *video = new InputVideoDevice(0, 10);
+
+            cv::Mat empty_matrix;
+
+            OpticalFlowCPUDevice *optical_flow = new OpticalFlowCPUDevice(empty_matrix.clone());
+            optical_flow->update_status(Device_ON);
+
+            RetinaDevice *retina = new RetinaDevice();
+
+            LowPassExponencialDevice *lpf = new LowPassExponencialDevice();
+
+            retina->add_signal_source(video);
+            optical_flow->add_signal_source(retina);
+            lpf->add_signal_source(optical_flow);
+            retina->add_signal_source(lpf);
+
+            input_devices.push_back(video);
+            on_devices.push_back(retina);
+            on_devices.push_back(optical_flow);
+            on_devices.push_back(lpf);
+
+        }
+
+        void disconnect_all() {
+
+            BaseDevice *dev;
+
+            // disconnects all input_devices
             while(!input_devices.empty()) {
 
                 // get the first node element
@@ -101,25 +139,6 @@ class DSPSystem {
 
             }
 
-            dev = nullptr;
-
-        }
-
-        void build_system() {
-
-            /* TODO */
-            // BaseDevice *video = new InputVideoDevice("/home/josias/IC/DSP/dsp/Examples/walk.avi", 10);
-            BaseDevice *video = new InputVideoDevice(0, 10);
-
-            BaseDevice *optical_flow = new OpticalFlowCPUDevice();
-            optical_flow->update_status(Device_ON);
-
-            video->connect(optical_flow);
-
-            input_devices.push_back(video);
-            on_devices.push_back(optical_flow);
-
-
         }
 
         // the main method
@@ -129,7 +148,7 @@ class DSPSystem {
 
             BaseDevice *dev = nullptr;
 
-            while(i < 300) {
+            while(i < 524) {
 
                 // run all the outputs
                 while(output_devices.iterator()) {
@@ -149,10 +168,10 @@ class DSPSystem {
 
                     if (nullptr != dev) {
 
-                        dev->run();
-
                         // append to running_devices
                         running_devices.push_back(dev);
+
+                        dev->run();
 
                     }
 
@@ -165,10 +184,10 @@ class DSPSystem {
 
                     if (nullptr != dev) {
 
-                        dev->run();
-
                         // append to running_devices
                         running_devices.push_back(dev);
+
+                        dev->run();
 
                     }
 

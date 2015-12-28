@@ -14,49 +14,24 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
 
     private:
 
-        cv::TermCriteria termcrit;
-        cv::Size subPixWinSize, winSize;
-
-
-        // the frame rate
-        float dt;
-
-        // an empty matrix
-        cv::Mat empty_matrix;
+        // the frame fps
+        float fps, dt;
 
         // just to avoid a lot of allocs
-        cv::Mat image0, image1;
+        cv::Mat frame, flow, cflow;
 
-        bool first_time;
-
-        std::vector<cv::Point2f> features_prev, features_next;
-
-        std::vector<uchar> features;
-        cv::Mat err;
+        //
+        cv::UMat gray, old_gray, uflow;
 
     public:
 
         // basic constructor
-        OpticalFlowCPUDevice() :
-                                    dt(1000.0/30.0),
-                                    first_time(false),
-                                    termcrit(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, 20, 0.03),
-                                    subPixWinSize(10,10), winSize(31,31)
-        {
-
-            SingleInputDevice<cv::Mat, cv::Point2f>::input.first.set_null_value(empty_matrix);
-
-        }
-
-        // basic constructor
         OpticalFlowCPUDevice(cv::Mat v_null) :
                                                 SingleInputDevice<cv::Mat, cv::Point2f>::SingleInputDevice(v_null),
-                                                dt(1000.0/30.0),
-                                                first_time(false),
-                                                termcrit(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, 20, 0.03),
-                                                subPixWinSize(10,10), winSize(31,31) {}
+                                                dt(1.0/30) {}
 
         // basic destructor
+        virtual ~OpticalFlowCPUDevice() {}
 
         // @overriding the connect method
         // connect two devices
@@ -81,12 +56,14 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
                     // reverse case
                     add_signal_source(dev);
 
-                    // try to update the frame rate
+                    // try to update the fps
                     VideoSignalDevice *vsd = dynamic_cast<VideoSignalDevice *>(dev);
 
                     if(nullptr != vsd) {
 
-                        dt = (float) 1000.0/(vsd->get_fps());
+                        fps = vsd->get_fps();
+
+                        dt = 1.0/fps;
 
                     }
 
@@ -99,71 +76,117 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
         // @overriding the main method
         virtual void run() {
 
-            if (1 < SingleInputDevice<cv::Mat, cv::Point2f>::input.first.get_size()) {
+            // the mean
+            cv::Point2f mean(0.0, 0.0);
+
+            CircularBuffer<cv::Mat> *buffer = SingleInputDevice<cv::Mat, cv::Point2f>::get_buffer();
+
+            if (0 < buffer->get_size()) {
+
 
                 // get the images from the the input buffer
-                cv::Mat frame0 = SingleInputDevice<cv::Mat, cv::Point2f>::input.first.pop().clone();
-                cv::Mat frame1 = SingleInputDevice<cv::Mat, cv::Point2f>::input.first.get_current().clone();
+                frame = buffer->pop();
 
-                // the mean
-                cv::Point2f mean(0.0, 0.0);
+                // convert to gray scale
+                cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
 
-                if(!frame0.empty() && !frame1.empty()) {
+                if(!old_gray.empty()) {
 
-                    // convert to grayscale
-                    cv::cvtColor(frame0, image0, cv::COLOR_BGR2GRAY);
+                    cv::calcOpticalFlowFarneback(old_gray, gray, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
 
-                    // convert to grayscale
-                    cv::cvtColor(frame1, image1, cv::COLOR_BGR2GRAY);
+                    uflow.copyTo(flow);
 
-                    if(!first_time) {
+                    for(int i = 0; i < flow.rows; i++) {
 
-                        cv::goodFeaturesToTrack(image1, features_next, 500, 0.01, 10, cv::Mat(), 3, 0, 0.4);
-                        cv::cornerSubPix(image1, features_next, subPixWinSize, cv::Size(-1,-1), termcrit);
+                        cv::Point2f *row = flow.ptr<cv::Point2f>(i);
 
-                        first_time = true;
-                        std::cout << std::endl << "Primeira vez" << std::endl;
+                        for(int j = 0; j < flow.cols; j++) {
 
-                    }
-
-                    features_prev = features_next;
-
-                    cv::calcOpticalFlowPyrLK(image0, image1, features_prev, features_next, features, err, winSize, 3, termcrit, 0, 0.001);
-
-                    int k;
-                    for (int i = k = 0; i < features_next.size(); i++) {
-
-                        cv::line(frame1, features_prev[i], features_next[i], cv::Scalar(0,255,0), 2);
-                        if (features[i]) {
-                            features_next[k++] = features_next[i];
+                            mean += row[j];
 
                         }
 
                     }
 
-                    features_next.resize(k);
+                }
 
-                    cv::imshow("frame", frame1);
+                std::swap(old_gray, gray);
 
-                    cv::waitKey(100);
+                if (0 != flow.rows && 0 != flow.cols) {
 
-                    // push to outputs
-                    DeviceOutput<cv::Point2f>::send(mean);
+                    mean /= (((float) flow.rows*flow.cols)*dt);
 
                 } else {
 
-                    // push to outputs
-                    DeviceOutput<cv::Point2f>::send(mean);
+                    mean.x = 0.0;
+                    mean.y = 0.0;
 
                 }
 
-//                 std::cout << std::endl << "Mean (" << mean.x << ", " << mean.y << ")" << std::endl;
-
             }
 
+            // push to outputs
+            DeviceOutput<cv::Point2f>::send(mean);
 
         }
 
+        // draw the optical flow
+        virtual void drawOpticalFlow(cv::Mat &flow) {
+
+            cv::Mat xy[2]; //X,Y
+            cv::split(flow, xy);
+
+            //calculate angle and magnitude
+            cv::Mat magnitude, angle;
+            cv::cartToPolar(xy[0], xy[1], magnitude, angle, true);
+
+            //translate magnitude to range [0;1]
+            double mag_max;
+            cv::minMaxLoc(magnitude, nullptr, &mag_max);
+            magnitude.convertTo(magnitude, -1, 1.0/mag_max);
+
+            //build hsv image
+            cv::Mat _hls[3], hsv;
+            _hls[0] = angle;
+            _hls[1] = cv::Mat::ones(angle.size(), CV_32F);
+            _hls[2] = magnitude;
+            cv::merge(_hls, 3, hsv);
+
+            //convert to BGR and show
+            cv::Mat bgr;
+            cv::cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
+
+            cv::imshow("frame", frame);
+            cv::imshow("optical flow", bgr);
+
+            cv::waitKey(15);
+
+        }
+
+        // add a signal source to the current input
+        virtual void add_signal_source(BaseDevice *dev) {
+
+            SingleInputDevice<cv::Mat, cv::Point2f>::add_signal_source(dev);
+
+            // try to update the fps
+            VideoSignalDevice *vsd = dynamic_cast<VideoSignalDevice *>(dev);
+
+            if(nullptr != vsd) {
+
+                fps = vsd->get_fps();
+
+                dt = 1.0/fps;
+
+            }
+
+        }
+
+                // disconnect the a signal source from the current inputs
+        virtual void disconnect_signal_source(BaseDevice *dev) {
+
+            SingleInputDevice<cv::Mat, cv::Point2f>::disconnect_signal_source(dev);
+
+        }
 };
 
 #endif

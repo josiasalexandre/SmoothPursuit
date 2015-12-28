@@ -1,20 +1,20 @@
-#ifndef ADD_SIGNAL_DEVICE_H
-#define ADD_SIGNAL_DEVICE_H
+#ifndef ADD_SIGNALS_DEVICE_H
+#define ADD_SIGNALS_DEVICE_H
 
 #include <MultInputDevice.hpp>
 
 template<typename T, unsigned int N>
-class AddSignalDevice : virtual public MultInputDevice<T, T, N> {
+class AddSignalsDevice : virtual public MultInputDevice<T, T, N> {
 
     private:
 
     public:
 
-        AddSignalDevice(T v_null) : MultInputDevice<T, T, N>::MultInputDevice(v_null) {
+        AddSignalsDevice(T v_null) : MultInputDevice<T, T, N>::MultInputDevice(v_null) {
 
             if (1 > N) {
 
-                throw std::invalid_argument("usage: AddSignalDevice<T, N>(T v_null) -> N must be greater than zero");
+                throw std::invalid_argument("usage: AddSignalsDevice<T, N>(T v_null) -> N must be greater than zero");
 
             }
 

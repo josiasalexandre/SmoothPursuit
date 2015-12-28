@@ -23,23 +23,27 @@ class DeviceOutput : virtual public BaseDevice {
         DeviceOutput() : output(0) {}
 
         // basic destructor
-        ~DeviceOutput() {
-
-            int out_size = output.size();
+        virtual ~DeviceOutput() {
 
             // lock the output vector
             output_mutex.lock();
+
+            int out_size = output.size();
 
             for (int i = 0; i < out_size; i++) {
 
                 // set the CircularBuffer to null
                 output[i].first = nullptr;
 
-                // disconnects the current device's output from the external input
-                output[i].second->disconnect_signal_source(this);
+                if (nullptr != output[i].second) {
 
-                // set the DeviceInput pointer to null
-                output[i].second = nullptr;
+                    // disconnects the current device's output from the external input
+                    output[i].second->disconnect_signal_source(this);
+
+                    // set the DeviceInput pointer to null
+                    output[i].second = nullptr;
+
+                }
 
             }
 
@@ -148,8 +152,6 @@ class DeviceOutput : virtual public BaseDevice {
                     output[i].first->push(result);
 
                 }
-
-
 
             }
 

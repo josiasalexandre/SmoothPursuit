@@ -12,6 +12,8 @@ class DeviceInput : virtual public BaseDevice {
 
     public:
 
+        virtual ~DeviceInput() {}
+
         // add a signal source to the current input
         virtual void add_signal_source(BaseDevice *) =0;
 

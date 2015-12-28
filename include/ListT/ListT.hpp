@@ -1,8 +1,9 @@
 #ifndef DOUBLY_LINKED_LIST_H
 #define DOUBLY_LINKED_LIST_H
 
+#include <new>
+
 #include "NodeT.hpp"
-#include <stdio.h>
 
 template<typename T>
 class List {

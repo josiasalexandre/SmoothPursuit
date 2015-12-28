@@ -5,8 +5,9 @@ enum DeviceStatus { Device_ON, Device_OFF};
 
 class BaseDevice {
 
-    protected:
+    private:
 
+        // on/off
         DeviceStatus status;
 
     public:

@@ -7,7 +7,7 @@
 template<typename A, typename B>
 class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutput<B> {
 
-    protected:
+    private:
 
         // the device input buffer
         DeviceInputBuffer<A> input;
@@ -26,7 +26,7 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
         SingleInputDevice(A v_null) : input (v_null, nullptr) {}
 
         // basic destructor
-        ~SingleInputDevice() {
+        virtual ~SingleInputDevice() {
 
             if (nullptr != input.second) {
 
@@ -170,6 +170,11 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
 
         }
 
+        virtual CircularBuffer<A>* get_buffer() {
+
+            return &input.first;
+
+        }
 };
 
 #endif

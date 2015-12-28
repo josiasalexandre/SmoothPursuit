@@ -1,6 +1,7 @@
 #ifndef CIRCULAR_BUFFER_H
 #define CIRCULAR_BUFFER_H
 
+#include <new>
 #include <mutex>
 
 #define MIN_BUFFER_SIZE 64

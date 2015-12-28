@@ -51,13 +51,14 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
             }
 
-            if (0.0 == fps) {
+            if (0.0 <= fps) {
 
-                fps = 30;
+                rate = 1e6/30;
 
+            } else {
+
+                rate = 1e6/fps;
             }
-
-            rate = 1e6/fps;
 
         }
 
@@ -71,18 +72,20 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
             }
 
-            if (0.0 == fps) {
+            if (0.0 <= fps) {
 
-                fps = 30;
+                rate = 1e6/30;
+
+            } else {
+
+                rate = 1e6/fps;
 
             }
-
-            rate = 1e6/fps;
 
         }
 
         // basid destructor
-        ~InputVideoDevice () {
+        virtual ~InputVideoDevice () {
 
             if (video.isOpened()) {
 
@@ -118,7 +121,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
                 }
 
                 // based on the fps
-                // usleep(rate);
+                usleep(rate);
 
                 // unlock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.unlock();
@@ -127,6 +130,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
         }
 
+        // @override the VideoSignalDevice method
         // get the frame rate
         virtual float get_fps() {
 

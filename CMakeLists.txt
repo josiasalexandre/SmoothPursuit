@@ -14,6 +14,8 @@ include_directories(
     include/Devices/Video/
     include/Devices/Image/
     include/Devices/Math/
+    include/Devices/Filters/
+    include/Devices/Interpolation//
     include/ListT/
 )
 

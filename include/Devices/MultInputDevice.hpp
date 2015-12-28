@@ -30,7 +30,7 @@ class MultInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutp
         }
 
         // basic destructor
-        ~MultInputDevice() {
+        virtual ~MultInputDevice() {
 
             for (int i = 0; i < N; i++) {
 
