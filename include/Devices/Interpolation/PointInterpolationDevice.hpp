@@ -2,7 +2,6 @@
 #define SIGNAL_INTERPOLATION_H
 
 #include <vector>
-#include <boost/concept_check.hpp>
 
 #include <opencv2/opencv.hpp>
 

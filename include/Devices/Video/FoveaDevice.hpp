@@ -3,7 +3,6 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/video/video.hpp>
-#include <boost/concept_check.hpp>
 
 #include <BaseDevice.hpp>
 #include <DeviceInput.hpp>
