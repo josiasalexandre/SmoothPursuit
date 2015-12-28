@@ -8,7 +8,7 @@
 #include <AddSignalsDevice.hpp>
 #include <InputVideoDevice.hpp>
 #include <OpticalFlowCPUDevice.hpp>
-#include <RetinaDevice.hpp>
+#include <FoveaDevice.hpp>
 #include <LowPassExponencialDevice.hpp>
 
 class DSPSystem {
@@ -32,29 +32,45 @@ class DSPSystem {
 
             /* TODO */
             /*
-             *  We should build some Parser and get the configuration form an external file (XML? Json?)
+             *  We should build some Parser and get the configuration from an external file (XML? Json?)
+             *  THIS IS JUST A PROTOTYPE TO MAKE THE FIRST TESTS POSSIBLE
+             *  THE NEXT STEP: IMPLEMENT THE MISSING DEVICES AND BUILD THE SYSTEM FOLLOWING THE SMOOTH PURSUIT MODELS
              *
              */
             BaseDevice *video = new InputVideoDevice("../Examples/ball.avi", 30);
             //BaseDevice *video = new InputVideoDevice("../Examples/walk.avi", 10);
             // BaseDevice *video = new InputVideoDevice(0, 10);
 
+            // just to provide an empty Matrix as the null value
             cv::Mat empty_matrix;
 
+            // build the optical flow device
             OpticalFlowCPUDevice *optical_flow = new OpticalFlowCPUDevice(empty_matrix.clone());
+            // set the device ON
             optical_flow->update_status(Device_ON);
 
-            RetinaDevice *retina = new RetinaDevice();
+            // build a FoveaDevice: crop the ROI and send to the external devices
+            FoveaDevice *fovea = new FoveaDevice();
 
+            // build a LowPassExponencial filter
             LowPassExponencialDevice *lpf = new LowPassExponencialDevice();
 
-            retina->add_signal_source(video);
-            optical_flow->add_signal_source(retina);
-            lpf->add_signal_source(optical_flow);
-            retina->add_signal_source(lpf);
+            // connecting the nodes
+            // the fovea receives the the frame from the video input device
+            fovea->add_signal_source(video);
 
+            // the optical flow device receives the fovea from the fovea device
+            optical_flow->add_signal_source(fovea);
+
+            // the Low Pass exponencial filter receives the optical flow
+            lpf->add_signal_source(optical_flow);
+
+            // the fovea receives the velocity command from the low pass filter
+            fovea->add_signal_source(lpf);
+
+            // includes all devices to the system task manager
             input_devices.push_back(video);
-            on_devices.push_back(retina);
+            on_devices.push_back(fovea);
             on_devices.push_back(optical_flow);
             on_devices.push_back(lpf);
 
@@ -148,6 +164,7 @@ class DSPSystem {
 
             BaseDevice *dev = nullptr;
 
+            // testing, the limit should be better than this
             while(i < 524) {
 
                 // run all the outputs

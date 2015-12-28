@@ -11,7 +11,7 @@
 #include <VideoSignalDevice.hpp>
 
 
-class RetinaDevice :
+class FoveaDevice :
                         virtual public DeviceOutput<cv::Mat>,
                         virtual public DeviceInput<cv::Mat>,
                         virtual public DeviceInput<cv::Point2f>,
@@ -58,7 +58,7 @@ class RetinaDevice :
 
         static void mouse_click(int event, int x, int y, int flags, void* param) {
 
-            RetinaDevice *self = static_cast<RetinaDevice *>(param);
+            FoveaDevice *self = static_cast<FoveaDevice *>(param);
 
             self->mouse_click_callback(event, x, y, flags);
 
@@ -108,10 +108,10 @@ class RetinaDevice :
     public:
 
         // basic constructor
-        RetinaDevice() : first_time(true), retina(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(30.0), dt(1.0/30.0), rate(1000.0/30.0) {}
+        FoveaDevice() : first_time(true), retina(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(30.0), dt(1.0/30.0), rate(1000.0/30.0) {}
 
         // basic destructor
-        ~RetinaDevice() {
+        ~FoveaDevice() {
 
             if (nullptr != frame_input.second) {
 
