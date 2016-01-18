@@ -107,7 +107,7 @@ class FoveaDevice :
     public:
 
         // basic constructor
-        FoveaDevice() : first_time(true), fovea(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(30.0), dt(1.0/30.0), rate(1000.0/30.0) {}
+        FoveaDevice() : first_time(true), fovea(300.0, 200.0, 100, 100), translation(0.0, 0.0), fps(25.0), dt(1.0/25.0), rate(1000.0/25.0) {}
 
         // basic destructor
         ~FoveaDevice() {
@@ -125,6 +125,7 @@ class FoveaDevice :
             }
 
         }
+
         // connect two devices
         virtual void connect(BaseDevice *dev) {
 
@@ -205,7 +206,7 @@ class FoveaDevice :
                 if (!velocity_input.first.empty()) {
 
                     // get the translation command
-                    translation += velocity_input.first.pop()*dt;
+                    translation += velocity_input.first.pop();
 
                     // move the fovea
                     fovea.x += (int) translation.x;
@@ -256,9 +257,7 @@ class FoveaDevice :
                 cv::line(frame, l3, l4, cv::Scalar(0,255,0));
 
                 cv::imshow("frame", frame);
-                cv::imshow("crop", cropped_image);
-
-                cv::waitKey(1);
+                cv::imshow("fovea", cropped_image);
 
                 // lock the output pointers
                 output_mutex.lock();
@@ -319,6 +318,7 @@ class FoveaDevice :
                         rate = 1000/fps;
 
                     }
+                    std::cout << std::endl << "MAT OUTPUT" << std::endl;
 
                 } else {
 
@@ -342,6 +342,7 @@ class FoveaDevice :
 
                     }
 
+                    std::cout << std::endl << "POINT OUTPUT" << std::endl;
                 }
 
             }

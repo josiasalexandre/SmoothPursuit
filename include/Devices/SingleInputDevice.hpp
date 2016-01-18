@@ -12,6 +12,15 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
         // the device input buffer
         DeviceInputBuffer<A> input;
 
+    protected:
+
+        // get the buffer address
+        virtual CircularBuffer<A>* get_buffer() {
+
+            return &input.first;
+
+        }
+
     public:
 
         // basic Constructor
@@ -170,11 +179,6 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
 
         }
 
-        virtual CircularBuffer<A>* get_buffer() {
-
-            return &input.first;
-
-        }
 };
 
 #endif

@@ -1,14 +1,12 @@
-#ifndef LOW_PASS_EXPONENCIAL_DEVICE_H
-#define LOW_PASS_EXPONENCIAL_DEVICE_H
+#ifndef LOW_PASS_EXPONENTIAL_DEVICE_H
+#define LOW_PASS_EXPONENTIAL_DEVICE_H
 
 #include <opencv2/opencv.hpp>
 
 #include <SingleInputDevice.hpp>
 
-
 // simpler IIR filter implementation -> the exponencial filter
-
-class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
+class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
     private:
 
@@ -24,13 +22,13 @@ class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, c
         // the last value and the filtered one
         cv::Point2f old_sample, filtered;
 
-        // a pointer to the base class buffer =( | * avoid protected? |
+        // a pointer to the base class buffer =( | * need to avoid protected? |
         CircularBuffer<cv::Point2f> *buffer;
 
     public:
 
         // basic constructor
-        LowPassExponencialDevice() : T(0.001), tau(0.05), old_sample(0.0, 0.0), buffer(nullptr) {
+        LowPassExponentialDevice() : T(0.001), tau(0.055), old_sample(0.0, 0.0), buffer(nullptr) {
 
             cv::Point2f zero(0.0, 0.0);
 
@@ -44,7 +42,7 @@ class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, c
         }
 
         // basic constructor
-        LowPassExponencialDevice(float sampling_rate, float time) : T(sampling_rate), tau(time), old_sample(0.0, 0.0), buffer(nullptr) {
+        LowPassExponentialDevice(float sampling_rate, float time) : T(sampling_rate), tau(time), old_sample(0.0, 0.0), buffer(nullptr) {
 
             cv::Point2f zero(0.0, 0.0);
 
@@ -58,10 +56,10 @@ class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, c
         }
 
         // basic constructor
-        LowPassExponencialDevice(cv::Point2f v_null) :
+        LowPassExponentialDevice(cv::Point2f v_null) :
                                                         SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
                                                         T(0.001),
-                                                        tau(0.05),
+                                                        tau(0.055),
                                                         old_sample(0.0, 0.0),
                                                         buffer(nullptr) {
 
@@ -71,7 +69,7 @@ class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, c
         }
 
         // basic constructor
-        LowPassExponencialDevice(cv::Point2f v_null, float sampling_rate, float time) :
+        LowPassExponentialDevice(cv::Point2f v_null, float sampling_rate, float time) :
                                                                                         SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
                                                                                         T(sampling_rate),
                                                                                         tau(time),
@@ -121,6 +119,7 @@ class LowPassExponencialDevice : virtual public SingleInputDevice<cv::Point2f, c
             alpha_1 = 1 - alpha;
 
         }
+
 };
 
 #endif

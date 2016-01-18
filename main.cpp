@@ -7,6 +7,8 @@ int main(int argc, char **argv) {
     system.build_system();
 
     cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
+    cv::namedWindow("fovea", cv::WINDOW_AUTOSIZE);
+
     system.run();
 
     system.disconnect_all();

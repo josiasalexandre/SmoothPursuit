@@ -37,7 +37,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
             }
 
-            rate = 1e6/30.0;
+            rate = 1e6/25.0;
 
         }
 
@@ -53,7 +53,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
             if (0.0 <= fps) {
 
-                rate = 1e6/30;
+                rate = 1e6/25;
 
             } else {
 
@@ -74,7 +74,7 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
 
             if (0.0 <= fps) {
 
-                rate = 1e6/30;
+                rate = 1e6/25;
 
             } else {
 
@@ -119,9 +119,6 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
                     }
 
                 }
-
-                // based on the fps
-                usleep(rate);
 
                 // unlock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.unlock();

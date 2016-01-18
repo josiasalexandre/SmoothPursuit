@@ -101,8 +101,7 @@ class MultInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutp
 
         }
 
-        // the main device method
-        virtual void run() = 0;
+        
 
         // add a signal source to the current input
         virtual void add_signal_source(BaseDevice *dev) {

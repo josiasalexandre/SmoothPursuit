@@ -23,12 +23,23 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
         //
         cv::UMat gray, old_gray, uflow;
 
+        // the base class buffer
+        CircularBuffer<cv::Mat> *buffer;
+
+        // the output
+        cv::Point2f mean;
+
     public:
 
         // basic constructor
         OpticalFlowCPUDevice(cv::Mat v_null) :
                                                 SingleInputDevice<cv::Mat, cv::Point2f>::SingleInputDevice(v_null),
-                                                dt(1.0/30) {}
+                                                dt(1.0/25.0), mean(0.0)
+        {
+
+             buffer = SingleInputDevice<cv::Mat, cv::Point2f>::get_buffer();
+
+        }
 
         // basic destructor
         virtual ~OpticalFlowCPUDevice() {}
@@ -77,12 +88,10 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
         virtual void run() {
 
             // the mean
-            cv::Point2f mean(0.0, 0.0);
-
-            CircularBuffer<cv::Mat> *buffer = SingleInputDevice<cv::Mat, cv::Point2f>::get_buffer();
+            mean.x = 0.0;
+            mean.y = 0.0;
 
             if (0 < buffer->get_size()) {
-
 
                 // get the images from the the input buffer
                 frame = buffer->pop();
@@ -114,7 +123,7 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
 
                 if (0 != flow.rows && 0 != flow.cols) {
 
-                    mean /= (((float) flow.rows*flow.cols)*dt);
+                    mean /= ((float) flow.rows*flow.cols);
 
                 } else {
 
