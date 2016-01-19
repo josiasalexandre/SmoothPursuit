@@ -46,6 +46,8 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
         void update_coeff(int halfLength, WindowType w_type) {
 
             int m = TAPS -1;
+            double m_2 = 0.5*m;
+            float normalization = 0.0;
 
             double val, tmp;
 
@@ -53,43 +55,55 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
                 case BARTLETT_WINDOW:
                     for (int n = 0; n <= halfLength; n++) {
 
-                        tmp = (double) n - (double) m/2;
-                        val = 1.0 - (2.0 * std::fabs(tmp))/m;
-                        coeff[n] = val;
-                        coeff[TAPS-n-1] = val;
+                        val = 1.0 - 2.0 * (m_2 - n)/m;
+                        coeff[n] *= val;
+                        coeff[TAPS-n-1] *= val;
 
                     }
                     break;
                 case HANNING_WINDOW:
                     for (int n = 0; n <= halfLength; n++) {
 
-                        val = 0.5 - 0.5 * cos(2.0 * M_PI * n / m);
-                        coeff[n] = val;
-                        coeff[TAPS-n-1] = val;
+                        val = 0.5 - 0.5 * std::cos(2.0 * M_PI * n / (TAPS-1));
+                        coeff[n] *= val;
+                        coeff[TAPS-n-1] *= val;
 
                     }
                     break;
                 case HAMMING_WINDOW:
+
                     for (int n = 0; n <= halfLength; n++) {
 
-                        val = 0.54 - 0.46 * cos(2.0 * M_PI * n / m);
-                        coeff[n] = val;
-                        coeff[TAPS-n-1] = val;
+                        val = 0.54 - 0.46 * (std::cos(2.0 * M_PI * n / (TAPS -1)));
+                        coeff[n] *= val;
+                        coeff[TAPS-n-1] *= val;
 
                     }
                     break;
                 case BLACKMAN_WINDOW:
                     for (int n = 0; n <= halfLength; n++) {
 
-                        val = 0.42 - 0.5 * cos(2.0 * M_PI * n / m) + 0.08 * cos(4.0 * M_PI * n / m);
-                        coeff[n] = val;
-                        coeff[TAPS-n-1] = val;
+                        val = 0.42 - 0.5 * std::cos(2.0 * M_PI * n / (2*halfLength)) + 0.08 * std::cos(4.0 * M_PI * n / (2*halfLength));
+                        coeff[n] *= val;
+                        coeff[TAPS-n-1] *= val;
 
                     }
                     break;
                 default:
                     break;
             }
+
+
+            for (int i = 0; i < TAPS; i++) {
+                normalization += coeff[i];
+            }
+
+            normalization = 1.0/normalization;
+
+            for (int i = 0; i < TAPS; i++) {
+                coeff[i] *= normalization;
+            }
+
         }
 
     public:
@@ -125,8 +139,7 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
                     val = 1.0 - val;
 
-                    ft = -ft;
-                }
+               }
 
                 coeff[halfLength] = val;
 
@@ -137,13 +150,17 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             }
 
+            if (HIGH_PASS == f_type) {
+
+                ft = -ft;
+            }
+
             // Calculate taps
             // Due to symmetry, only need to calculate half the coeff
             for (int n = 0; n < halfLength; n++) {
 
-                // get hte next value
+                // get the next value
                 val = sin(2.0*M_PI*ft*(n-m_2))/(M_PI*(n-m_2));
-
                 coeff[n] = val;
                 coeff[TAPS-n-1] = val;
 
@@ -157,6 +174,11 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             // get the buffer address
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
 
         }
 
@@ -227,8 +249,14 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
             // clear the entire buffer
             clear_special_buffer();
 
-            // get the buffer address
+             // get the buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
+
 
         }
 
@@ -236,7 +264,21 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
         virtual void run() {
 
             // save the new sample
-            special_buffer[offset] = buffer->pop();
+            cv::Point2f poped = buffer->pop();
+            if (poped.x != poped.x || std::isinf(poped.x)) {
+                std::cout << std::endl << "FIR device recebeu coisa errada no x" << std::endl;
+                std::cout << std::endl << poped << std::endl;
+                assert(poped == poped);
+            }
+            if (poped.y != poped.y || std::isinf(poped.y)) {
+                std::cout << std::endl << "FIR device recebeu coisa errada no y" << std::endl;
+                std::cout << std::endl << poped << std::endl;
+                assert(poped == poped);
+            }
+
+            special_buffer[offset] = poped;
+
+            cv::Point2f tmp(0.0, 0.0);
 
             // the null value
             output.x = 0.0;
@@ -267,6 +309,14 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             }
 
+            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
+
+                std::cout << std::endl << "O problema está no fir device! Produziu: " << output << std::endl;
+
+                assert(false);
+
+            }
+
             // increments the offset and verify the overlapping case
             if (TAPS <= ++offset) {
 
@@ -274,6 +324,8 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
                 offset = 0;
 
             }
+
+
 
             // send the
             DeviceOutput<cv::Point2f>::send(output);

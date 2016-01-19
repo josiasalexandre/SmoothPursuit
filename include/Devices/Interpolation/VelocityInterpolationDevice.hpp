@@ -96,7 +96,7 @@ class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f
             }
 
             // send the interpolated signal
-            DeviceOutput<cv::Point2f>::send(interpolated);
+            DeviceOutput<std::vector<cv::Point2f>>::send(interpolated);
 
             // update de old value
             old = current;

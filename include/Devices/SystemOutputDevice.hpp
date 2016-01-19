@@ -1,38 +1,43 @@
-#ifndef SINGLE_INPUT_DEVICE_H
-#define SINGLE_INPUT_DEVICE_H
+#ifndef SYSTEM_OUTPUT_DEVICE_H
+#define SYSTEM_OUTPUT_DEVICE_H
+
+#include <vector>
+#include <stdexcept>
 
 #include <DeviceInput.hpp>
 #include <DeviceOutput.hpp>
 
-template<typename A, typename B>
-class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutput<B> {
+template<typename T>
+class SystemOutputDevice : virtual public DeviceInput<T> {
 
     private:
 
         // the device input buffer
-        DeviceInputBuffer<A> input;
+        DeviceInputBuffer<T> input;
 
+        // the output vector address
+        std::vector<T> *output;
 
     public:
 
-        // basic Constructor
-        SingleInputDevice() {
+        // basic constructor
+        SystemOutputDevice (std::vector<T> *out) : output(out){
 
-            // set the input pointer to null
-            input.second = nullptr;
+            if (nullptr == out) {
+
+                throw std::invalid_argument("The output vector must be valid");
+
+            }
 
         }
 
-        // basic constructor
-        SingleInputDevice(A v_null) : input (v_null, nullptr) {}
-
         // basic destructor
-        virtual ~SingleInputDevice() {
+        virtual ~SystemOutputDevice() {
 
             if (nullptr != input.second) {
 
                 // build the DeviceInputBufferRef
-                DeviceInputBufferRef<A> buffer(&input.first, static_cast<DeviceInput<A> *>(this));
+                DeviceInputBufferRef<T> buffer(&input.first, static_cast<DeviceInput<T> *>(this));
 
                 // remove the current device's input from the external device's output'
                 input.second->remove_output(buffer);
@@ -50,20 +55,11 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
+                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
 
-                // try to dowcast to DeviceInput pointer
-                DeviceInput<B> *in = dynamic_cast<DeviceInput<B> *>(dev);
+                if (nullptr != out) {
 
-                if (nullptr != in) {
-
-                    // connect the current device's output to the external device's input
-                    in->add_signal_source(this);
-
-                } else if (nullptr != out) {
-
-                    // connec the external device's output to this current device's input
-                    // reverse case
+                    // connect the external device's output to this current device's input
                     add_signal_source(dev);
 
                 }
@@ -80,21 +76,21 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
                 // try to disconnect the external device from this current input
                 remove_signal_source(dev);
 
-                // try to dowcast to DeviceInput pointer
-                DeviceInput<B> *in = dynamic_cast<DeviceInput<B> *>(dev);
-
-                if (nullptr != in) {
-
-                    // try to disconnect this output device from the external device's input(s)
-                    in->remove_signal_source(this);
-
-                }
             }
 
         }
 
         // the main device method
-        virtual void run() = 0;
+        virtual void run() {
+
+            // get the first element
+            T out = input.first.pop();
+
+            // send to the output vector
+            output->push_back(out);
+
+
+        }
 
         // add a signal source to the current input
         virtual void add_signal_source(BaseDevice *dev) {
@@ -102,12 +98,12 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
+                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
 
                 if (nullptr != out) {
 
                     // build the DeviceInputBufferRef
-                    DeviceInputBufferRef<A> buffer(&input.first, static_cast<DeviceInput<A> *>(this));
+                    DeviceInputBufferRef<T> buffer(&input.first, static_cast<DeviceInput<T> *>(this));
 
                     if (nullptr != input.second) {
 
@@ -133,12 +129,12 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
+                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
 
                 if (out == input.second) {
 
                     // build the DeviceInputBufferRef
-                    DeviceInputBufferRef<A> buffer(&input.first, this);
+                    DeviceInputBufferRef<T> buffer(&input.first, this);
 
                     // remove the current device's input from the external device's output'
                     input.second->remove_output(buffer);
@@ -158,7 +154,7 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
             if (nullptr != dev && this != dev) {
 
                 // try to dowcast to DeviceOutput pointer
-                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
+                DeviceOutput<T> *out = dynamic_cast<DeviceOutput<T> *>(dev);
 
                 if (out == input.second) {
 
@@ -168,12 +164,6 @@ class SingleInputDevice : virtual public DeviceInput<A>, virtual public DeviceOu
                 }
 
             }
-
-        }
-        // get the buffer address
-        virtual CircularBuffer<A>* get_buffer() {
-
-            return &input.first;
 
         }
 

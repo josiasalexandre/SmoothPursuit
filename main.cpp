@@ -1,18 +1,11 @@
-#include <DSPSystem.hpp>
+#include <ImageMotionModel.hpp>
 
 int main(int argc, char **argv) {
 
-    DSPSystem system;
+    ImageMotionModel smooth_pursuit(25);
+//     ImageMotionModel smooth_pursuit("../../dsp/Examples/ball.avi", 25);
 
-    system.build_system();
-
-    cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
-    cv::namedWindow("fovea", cv::WINDOW_AUTOSIZE);
-
-    system.run();
-
-    system.disconnect_all();
-
+    smooth_pursuit.run();
     return 0;
 
 }

@@ -38,7 +38,7 @@ class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
             // get the new value
             output = buffer->pop();
 
-            output *= a;
+            output *= alpha;
 
             // send the output value to external devices
             DeviceOutput<cv::Point2f>::send(output);

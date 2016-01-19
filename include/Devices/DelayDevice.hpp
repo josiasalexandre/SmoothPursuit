@@ -56,6 +56,7 @@ class DelayDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             // send the output to external devices
             DeviceOutput<cv::Point2f>::send(output);
+//             std::cout << std::endl << "Output: " << output << std::endl;
 
         }
 

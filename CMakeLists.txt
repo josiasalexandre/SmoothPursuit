@@ -8,6 +8,7 @@ find_package(Qt4 REQUIRED)
 add_executable(dsp main.cpp)
 
 include_directories(
+    include/
     include/MatrixT/
     include/CircularBuffer/
     include/Devices/
@@ -19,10 +20,20 @@ include_directories(
     include/ListT/
 )
 
+set(DSP_LIB_SOURCES
+    src/OpticalFlowCPU.cpp
+    src/ImageMotionModel.cpp
+)
+
+## Declare a C++ library
+add_library(dsp_libs ${DSP_LIB_SOURCES})
+
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(dsp ${OpenCV_LIBS})
 target_link_libraries(dsp ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+target_link_libraries(dsp ${OpenCV_LIBS})
+target_link_libraries(dsp dsp_libs)
 
 install(TARGETS dsp RUNTIME DESTINATION bin)
 

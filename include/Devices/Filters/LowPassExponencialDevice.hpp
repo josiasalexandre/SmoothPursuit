@@ -28,13 +28,19 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
     public:
 
         // basic constructor
-        LowPassExponentialDevice() : T(0.001), tau(0.055), old_sample(0.0, 0.0), buffer(nullptr) {
+        LowPassExponentialDevice() :
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
+            T(0.001), tau(0.015), old_sample(0.0, 0.0), buffer(nullptr)
+        {
 
-            cv::Point2f zero(0.0, 0.0);
 
+            //
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
 
-            buffer->set_null_value(zero);
+                throw std::bad_alloc();
+
+            }
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
@@ -42,13 +48,18 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
         }
 
         // basic constructor
-        LowPassExponentialDevice(float sampling_rate, float time) : T(sampling_rate), tau(time), old_sample(0.0, 0.0), buffer(nullptr) {
+        LowPassExponentialDevice(float sampling_rate, float time) :
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
+            T(sampling_rate), tau(time), old_sample(0.0, 0.0), buffer(nullptr)
+        {
 
-            cv::Point2f zero(0.0, 0.0);
+            // get the buffer
+            buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
 
-            CircularBuffer<cv::Point2f> *buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+                throw std::bad_alloc();
 
-            buffer->set_null_value(zero);
+            }
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
@@ -57,27 +68,45 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
 
         // basic constructor
         LowPassExponentialDevice(cv::Point2f v_null) :
-                                                        SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
-                                                        T(0.001),
-                                                        tau(0.055),
-                                                        old_sample(0.0, 0.0),
-                                                        buffer(nullptr) {
+            SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
+            T(0.001),
+            tau(0.015),
+            old_sample(0.0, 0.0),
+            buffer(nullptr)
+        {
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
+
+            // get the buffer
+            buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
 
         }
 
         // basic constructor
         LowPassExponentialDevice(cv::Point2f v_null, float sampling_rate, float time) :
-                                                                                        SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
-                                                                                        T(sampling_rate),
-                                                                                        tau(time),
-                                                                                        old_sample(0.0, 0.0),
-                                                                                        buffer(nullptr) {
+            SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
+            T(sampling_rate),
+            tau(time),
+            old_sample(0.0, 0.0),
+            buffer(nullptr)
+        {
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
+
+            // get the buffer
+            buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
 
         }
 

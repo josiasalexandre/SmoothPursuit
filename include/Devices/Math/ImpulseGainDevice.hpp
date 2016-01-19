@@ -18,6 +18,7 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
         // the output value
         cv::Point2f output;
 
+
     public:
 
         // basic constructor
@@ -37,16 +38,22 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
             // update the output
             output = buffer->pop();
 
+            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
+
+                std::cout << std::endl << "Impulse recebeu coisa errada: " << output << std::endl;
+
+            }
+
             // update the horizontal
             if (c < output.x) {
 
                 // update the output
                 output.x = a*log(b*output.x + 1);
 
-            } else if (-c > output.x) {
+            } else if (-c > -output.x) {
 
                 // update the output
-                output.x = -a*log(b*output.x + 1);
+                output.x = -a*log(-(b*output.x + 1));
 
             } else {
 
@@ -61,15 +68,21 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 // update the output
                 output.y = a*log(b*output.y + 1);
 
-            } else if (-c < output.x) {
+            } else if (-c > -output.y) {
 
                 // update the output
-                output.y = -a*log(b*output.y + 1);
+                output.y = -a*log(-(b*output.y + 1));
 
             } else {
 
                 // update the output
                 output.y = 0.0;
+
+            }
+
+            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
+
+                std::cout << std::endl << "Impulse produziu coisa errada: " << output << std::endl;
 
             }
 

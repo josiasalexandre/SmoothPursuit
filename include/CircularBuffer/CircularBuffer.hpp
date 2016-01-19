@@ -159,13 +159,16 @@ class CircularBuffer {
             if (tail != head) {
 
                 // get the element at the tail position
-                e = buffer[tail++];
+                e = buffer[tail];
+
+                tail++;
 
                 // verify the limit
                 if (max_length <= tail) {
 
                     //reset
                     tail = 0;
+
                 }
 
             }

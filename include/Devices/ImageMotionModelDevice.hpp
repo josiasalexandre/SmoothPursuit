@@ -11,8 +11,6 @@ class ImageMotionModel {
 
     private:
 
-        // ALL DEVICES
-
         // video capture device
         InputVideoDevice video;
 
@@ -25,8 +23,9 @@ class ImageMotionModel {
         // velocity interpolation device
         VelocityInterpolationDevice interpolation;
 
+        cv::Point2f translation;
         // the smooth pursuit model
-        DSPSystem system;
+        //DSPSystem system;
 
     public:
 
@@ -39,7 +38,7 @@ class ImageMotionModel {
         //
         void run() {
 
-            while(frame) {
+            while(false) {
 
                 // fovea position
 

@@ -101,8 +101,6 @@ class MultInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutp
 
         }
 
-        
-
         // add a signal source to the current input
         virtual void add_signal_source(BaseDevice *dev) {
 
@@ -137,6 +135,40 @@ class MultInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutp
 
                     // warning /* TODO */
 
+
+                }
+
+            }
+
+        }
+
+        // add a signal source to the current input
+        virtual void add_signal_source(BaseDevice *dev, unsigned int n) {
+
+            if (nullptr != dev && this != dev && 0 <= n && N > n) {
+
+                // try to dowcast to DeviceOutput pointer
+                DeviceOutput<A> *out = dynamic_cast<DeviceOutput<A> *>(dev);
+
+                if (nullptr != out) {
+
+                    // build the DeviceInputBufferRef
+                    DeviceInputBufferRef<A> buffer(&inputs[n].first, static_cast<DeviceInput<A> *>(this));
+
+                    // update the input socket
+                    if (nullptr != inputs[n].second) {
+
+                        inputs[n].second->remove_output(buffer);
+
+                        inputs[n].second = nullptr;
+
+                    }
+
+                    // update the [i] external device pointer
+                    inputs[n].second = out;
+
+                    // updates the external device pointer
+                    out->add_output(buffer);
 
                 }
 
@@ -206,6 +238,18 @@ class MultInputDevice : virtual public DeviceInput<A>, virtual public DeviceOutp
 
         }
 
+        // get the desired buffer
+        virtual CircularBuffer<A>* get_buffer(unsigned int n) {
+
+            if (N > n && 0 <= n) {
+
+                return &inputs[n].first;
+
+            }
+
+            return nullptr;
+
+        }
 };
 
 #endif

@@ -9,38 +9,36 @@
 #include <DRandomInputDevice.hpp>
 #include <AddSignalsDevice.hpp>
 #include <SubtractVelocityDevice.hpp>
+#include <LinearGainDevice.hpp>
 #include <InputVideoDevice.hpp>
 #include <OpticalFlowCPUDevice.hpp>
 #include <FoveaDevice.hpp>
 #include <LowPassExponencialDevice.hpp>
+#include <FIRDevice.hpp>
 #include <FirstDifferentiatorDevice.hpp>
 #include <TrapzIntegratorDevice.hpp>
 #include <DelayDevice.hpp>
 #include <SimpleConnectionDevice.hpp>
 #include <VelocityInterpolationDevice.hpp>
+#include <SystemOutputDevice.hpp>
+#include <SmoothGainDevice.hpp>
+#include <ImpulseGainDevice.hpp>
+#include <SaturationDevice.hpp>
 
-template<typename T>
 class DSPSystem {
 
     private:
 
         // the system output
-        CircularBuffer<T> output;
+        std::vector<cv::Point2f> output;
 
         List<BaseDevice *> input_devices, output_devices;
         List<BaseDevice *> iddle_devices, running_devices, on_devices;
 
-    public:
+        // the first device input buffer
+        CircularBuffer<cv::Point2f> *input_buffer;
 
-        // the basic constructor
-        DSPSystem () {}
-
-        // the basic destructor
-        ~DSPSystem () {
-
-
-        }
-
+        // build the entire system
         void build_system() {
 
             /* TODO */
@@ -49,69 +47,164 @@ class DSPSystem {
              *  THIS IS JUST A PROTOTYPE TO MAKE THE FIRST TESTS POSSIBLE
              *
              */
-            BaseDevice *video = new InputVideoDevice("../Examples/ball.avi", 25);
-            // BaseDevice *video = new InputVideoDevice("../Examples/walk.avi", 10);
-            //BaseDevice *video = new InputVideoDevice(0, 25);
 
-            // the fovea device
-            FoveaDevice *fovea = new FoveaDevice();
-
-            // the optical flow device
-            OpticalFlowCPUDevice *optical_flow = new OpticalFlowCPUDevice(cv::Mat());
-
-            // the interpolation device
-            VelocityInterpolationDevice *interpolation = new VelocityInterpolationDevice(LINEAR_INTERPOLATION);
-
-            // the subtract device
+            // subtract velocities
             SubtractVelocityDevice<cv::Point2f> *subtract = new SubtractVelocityDevice<cv::Point2f>(cv::Point2f(0.0, 0.0));
 
-            /*
+            // get the input buffer
+            input_buffer = subtract->get_buffer(0);
 
-            // the add signal device
-            AddSignalsDevice<cv::Point2f, 2> *add_velocities = new AddSignalsDevice<cv::Point2f, 2>(cv::Point2f(0.0, 0.0));
+            // the delay device
+            DelayDevice *delay_1 = new DelayDevice(72-25);
+            // DelayDevice *delay_1 = new DelayDevice(72-25);
+            // DelayDevice *delay_2 = new DelayDevice(77);
 
-            // the delay device 65 ms
-            DelayDevice *delay = new DelayDevice(65);
+            // FIRST PATHWAY
+            // the linear gain
+            LinearGainDevice *linear_gain = new LinearGainDevice(8.3);
+            // input_buffer = linear_gain->get_buffer();
 
-            */
+            // the low pass filter
+            FIRDevice<41> *low_pass_1 = new FIRDevice<41>(1000, 5, LOW_PASS, HAMMING_WINDOW);
+
+            // derivative
+            FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(cv::Point2f(0.0, 0.0));
+
+            // SECOND PATHWAY
+            ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500, 0.00015, 3000);
+
+            // the low pass
+            FIRDevice<41> *low_pass_2 = new FIRDevice<41>(1000, 10, LOW_PASS, HAMMING_WINDOW);
+
+            // THIRD PATHWAY
+            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28, 0.1, 0.16, 500, 18.5);
+
+            // the low pass
+            FIRDevice<41> *low_pass_3 = new FIRDevice<41>(1000, 40, LOW_PASS, HAMMING_WINDOW);
+
+            // summ all paths
+            AddSignalsDevice<cv::Point2f, 3> *sum = new AddSignalsDevice<cv::Point2f, 3>(cv::Point2f(0.0, 0.0));
+            // AddSignalsDevice<cv::Point2f, 2> *sum = new AddSignalsDevice<cv::Point2f, 2>(cv::Point2f(0.0, 0.0));
+
+            // integrator
+            TrapzIntegratorDevice *integrator = new TrapzIntegratorDevice(cv::Point2f(0.0, 0.0));
+
+            // Just a first order IIR filter
+            // the plant low pass filter
+            FIRDevice<41> *plant = new FIRDevice<41>(1000, 40, LOW_PASS, HAMMING_WINDOW);
+            // LowPassExponentialDevice *plant = new LowPassExponentialDevice(0.001, 0.004);
+
+            // the feedback gain
+            LinearGainDevice *feedback_gain = new LinearGainDevice(1);
+
+            // Saturation
+            SaturationDevice *saturation = new SaturationDevice(30);
+
+            // the system output
+            SystemOutputDevice<cv::Point2f> *output_vector = new SystemOutputDevice<cv::Point2f>(&output);
+
             // CONNECT ALL DEVICES
-            // the input video to the fovea device
-            fovea->add_signal_source(video);
-
-            // the the fovea to the optical flow
-            optical_flow->add_signal_source(fovea);
-
-            fovea->add_signal_source(optical_flow);
-
-            // the optical flow to the interpolation device
-            interpolation->add_signal_source(optical_flow);
-
-            // SimpleConnectionDevice
-            //SimpleConnectionDevice<>
-
-            // the interpolation to the subtract device
-            subtract->add_signal_source(interpolation);
-
-            /*
+            delay_1->add_signal_source(subtract);
+            // delay_2->add_signal_source(subtract);
 
 
-            // THIS IS THE FIRST CONNECTION
-            add_velocities->add_signal_source(interpolation);
+            // connect the subtract output to linear gain input
+            linear_gain->add_signal_source(subtract);
+            //linear_gain->add_signal_source(delay_1);
 
-            // the add_velocities to the delay device
-            delay->add_signal_source(add_velocities);
-            */
+            // connect the low_pass_1 to the linear gain
+            low_pass_1->add_signal_source(linear_gain);
+            //low_pass_1->add_signal_source(differentiator_2);
 
-            //
-            input_devices.push_back(video);
+            // connect the delay to the differentiator device
+            differentiator->add_signal_source(delay_1);
+            // differentiator->add_signal_source(delay_2);
+            // differentiator->add_signal_source(linear_gain);
 
-            running_devices.push_back(fovea);
-            running_devices.push_back(optical_flow);
-            running_devices.push_back(interpolation);
+            // connect the impulse gain
+            impulse_gain->add_signal_source(differentiator);
 
+            // connect the second low pass
+            low_pass_2->add_signal_source(impulse_gain);
+
+            // connect the smooth gain
+            smooth_gain->add_signal_source(differentiator);
+            // smooth_gain->add_signal_source(linear_gain);
+
+            // connect the third low pass
+            low_pass_3->add_signal_source(smooth_gain);
+
+            // connect the integrator
+            //integrator->add_signal_source(low_pass_3);
+
+            // summ all signals
+            sum->add_signal_source(low_pass_1);
+            sum->add_signal_source(low_pass_2);
+            sum->add_signal_source(low_pass_3);
+            // sum->add_signal_source(integrator);
+
+            // connect the saturation to the feedback
+            // saturation->add_signal_source(integrator);
+
+            //integrator->add_signal_source(low_pass_1);
+            integrator->add_signal_source(sum);
+            //integrator->add_signal_source(smooth_gain);
+
+            // connect the integrator to the plant device
+            // plant->add_signal_source(low_pass_1);
+            // plant->add_signal_source(low_pass_1);
+            // plant->add_signal_source(sum);
+            // plant->add_signal_source(linear_gain);
+            plant->add_signal_source(integrator);
+            //plant->add_signal_source(saturation);
+
+
+            // control the feedback gain
+            feedback_gain->add_signal_source(plant);
+
+            // the feedback connection FOVEA
+            subtract->add_signal_source(feedback_gain, 1);
+
+            // connect the plant to output
+            output_vector->add_signal_source(plant);
+//             output_vector->add_signal_source(linear_gain);
+
+            // SAVE THE DEVICES
+            input_devices.push_back(subtract);
+            on_devices.push_back(delay_1);
+//             on_devices.push_back(delay_2);
+            on_devices.push_back(linear_gain);
+            on_devices.push_back(low_pass_1);
+            on_devices.push_back(differentiator);
+            on_devices.push_back(impulse_gain);
+            on_devices.push_back(low_pass_2);
+            on_devices.push_back(smooth_gain);
+            on_devices.push_back(low_pass_3);
+            on_devices.push_back(sum);
+            on_devices.push_back(integrator);
+            on_devices.push_back(plant);
+            on_devices.push_back(feedback_gain);
+            on_devices.push_back(saturation);
+            output_devices.push_back(output_vector);
 
         }
 
+    public:
+
+        // the basic constructor
+        DSPSystem () : output(0), input_buffer(nullptr) {
+
+            // build the entire system
+            build_system();
+
+        }
+
+        // the basic destructor
+        ~DSPSystem () {
+
+        }
+
+        // remove all devices
         void disconnect_all() {
 
             BaseDevice *dev;
@@ -194,14 +287,21 @@ class DSPSystem {
         }
 
         // the main method
-        void run() {
+        std::vector<cv::Point2f> run(std::vector<cv::Point2f> &input) {
 
-            int i = 0;
+            // get the input size
+            int input_size = input.size();
+
+            // cleat the output vector
+            output.clear();
 
             BaseDevice *dev = nullptr;
 
             // testing, the limit should be better than this
-            while(i < 524) {
+            for(int i = 0; i < input_size; i++) {
+
+                // send the input to the first device in the list
+                input_buffer->push(input[i]);
 
                 // run all the outputs
                 while(output_devices.iterator()) {
@@ -246,6 +346,9 @@ class DSPSystem {
 
                 }
 
+                dev = nullptr;
+
+
                 // run all the input_devices
                 while(input_devices.iterator()) {
 
@@ -283,23 +386,20 @@ class DSPSystem {
 
                 }
 
-                // delete the dev pointer
+                // reset the dev pointer
                 dev = nullptr;
-
-                i += 1;
-
-                cv::waitKey(25);
 
             }
 
+            // return the output vector
+            return output;
+
         };
 
-        // the start method
-        void start() {
+        // get the input buffer
+        CircularBuffer<cv::Point2f>* get_input_buffer() {
 
-            std::thread dsp(&DSPSystem::run, this);
-
-            dsp.detach();
+            return input_buffer;
 
         }
 };

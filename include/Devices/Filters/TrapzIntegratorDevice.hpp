@@ -25,6 +25,11 @@ class TrapzIntegratorDevice : virtual public SingleInputDevice<cv::Point2f, cv::
 
             // get the buffer addres
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+            if (nullptr == buffer) {
+
+                throw std::bad_alloc();
+
+            }
 
         }
 
@@ -34,8 +39,26 @@ class TrapzIntegratorDevice : virtual public SingleInputDevice<cv::Point2f, cv::
             // get the new value
             new_value = buffer->pop();
 
+            if (new_value != new_value || std::isinf(new_value.x) || std::isinf(new_value.y)) {
+                std::cout << std::endl << "Trapz recebeu coisa errada: " << std::endl;
+                std::cout << std::endl << "Old value: " << old_value;
+                std::cout << std::endl << "New value: " << new_value;
+                std::cout << std::endl  << "Output: " << output;
+                assert(false);
+            }
+
             // update the output value
-            output = output + 0.5*(new_value + old_value);
+            output = output + 0.001*0.5*(new_value + old_value);
+
+            if (output != output || std::isinf(output.x) || std::isinf(output.y))
+            {
+                std::cout << std::endl << "Trapz produziu coisa errada: " << output << std::endl;
+                std::cout << std::endl << "Old value: " << old_value;
+                std::cout << std::endl << "New value: " << new_value;
+                std::cout << std::endl  << "Output: " << output;
+
+                assert(false);
+            }
 
             // save the new value
             old_value = new_value;
