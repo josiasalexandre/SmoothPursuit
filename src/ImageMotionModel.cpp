@@ -3,8 +3,18 @@
 
 // basic constructor with video filename and frame rate
 ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
-    video(filename), fps(frame_rate), fs(1000), fovea(300.0, 200.0, 100, 100), system(), interpolated(0),
-    current_mean(0.0, 0.0), old_mean(0.0, 0.0), interp(false), translation(0.0, 0.0)
+    video(filename),
+    fps(frame_rate),
+    fs(1000),
+    fovea(300.0, 200.0, 100, 100),
+    system(),
+    interpolated(0),
+    current_mean(0.0, 0.0),
+    old_mean(0.0, 0.0),
+    interp(false),
+    translation(0.0, 0.0),
+    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     inverse_fs = 1.0/fs;
@@ -26,8 +36,18 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
 
 // basic constructor with camera and frame rate
 ImageMotionModel::ImageMotionModel(float frame_rate) :
-    video(0), fps(frame_rate), fs(1000), fovea(300.0, 200.0, 100, 100), translation(0.0, 0.0), system(), interpolated(0),
-    current_mean(0.0, 0.0), old_mean(0, 0), interp(false)
+    video(0),
+    fps(frame_rate),
+    fs(1000),
+    fovea(300.0, 200.0, 100, 100),
+    system(),
+    interpolated(0),
+    current_mean(0.0, 0.0),
+    old_mean(0.0, 0.0),
+    interp(false),
+    translation(0.0, 0.0),
+    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    // optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     inverse_fs = 1.0/fs;
@@ -53,8 +73,8 @@ void ImageMotionModel::mouse_click_callback(int event, int x, int y, int flags) 
 
     if (cv::EVENT_LBUTTONDBLCLK == event) {
 
-        fovea.x = x - 50;
-        fovea.y = y - 50;
+        fovea.x = x - (fovea.width*0.5);
+        fovea.y = y - (fovea.width*0.5);
 
     }
 
@@ -111,15 +131,23 @@ void ImageMotionModel::select_roi() {
 // the main method
 void ImageMotionModel::run() {
 
-    std::ofstream plot;
-
-    plot.open("plot.mat");
-
     cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
 
     int keyboard = 0;
 
     int output_size;
+
+    cv::Point2f error(0.0, 0.0);
+
+    std::ofstream error_file;
+
+    error_file.open("error.mat");
+    if (!error_file.is_open()) {
+        std::cout << std::endl << "Could not open the file error.mat" << std::endl;
+        return;
+    }
+
+    error_file << "error = [";
 
     while(!frame.empty() && 'q' != keyboard) {
 
@@ -129,16 +157,32 @@ void ImageMotionModel::run() {
         // displacement?
         current_mean = optical_flow.run(frame(fovea).clone());
 
-        if (0.0001 > std::fabs(current_mean.x)) {
-            current_mean.x = 0;
+        if (current_mean.x <)
+        if (0.15 > std::fabs(current_mean.x)) {
+
+            current_mean.x = 0.0;
+
+        } else if (0 > current_mean.x*translation.x) {
+
+            //current_mean.x = -current_mean.x*;
+            current_mean.x *= -0.25;
+
         }
 
-        if (0.0001 > std::fabs(current_mean.y)) {
-            current_mean.y = 0;
+        if (0.15 > std::fabs(current_mean.y)) {
+
+            current_mean.y = 0.0;
+
+        } else if (0 > current_mean.y*translation.y) {
+
+            current_mean.y *= -0.25;
+            //current_mean.y = -current_mean.y;
+
         }
 
         // considering displacement
-        current_mean = current_mean/0.04;
+        current_mean.x = current_mean.x/0.04;
+        current_mean.y = current_mean.y/0.04;
 
         if (!interp) {
 
@@ -147,31 +191,41 @@ void ImageMotionModel::run() {
 
             interp = true;
 
+            // continue
+            continue;
+
+            // file pointer
+            std::ofstream plot;
+
+            // open the file
+            plot.open("plot.mat");
+
             float time = 15.0/50.0;;
-            std::vector<cv::Point2f> step;
+
+            // build a step signal at signal.x and a sin at signal.y
+            std::vector<cv::Point2f> signal;
+
             for (int i = 0; i < 50; i++) {
-                step.push_back(cv::Point2f(time*i, 15*std::sin(i*0.001*2*M_PI)));
-//                 step.push_back(cv::Point2f(time*i, std::sin(i*0.001*2.3873241491*2*M_PI)));
+                signal.push_back(cv::Point2f(time*i, 15*std::sin(i*0.001*2*M_PI)));
 
             }
 
             for (int i = 50; i < 6000; i++) {
-                step.push_back(cv::Point2f(15.0, 15*std::sin(i*0.001*2*M_PI)));
-//                 step.push_back(cv::Point2f(1.0, std::sin(i*0.001*2.3873241491*2*M_PI)));
+                signal.push_back(cv::Point2f(15.0, 15*std::sin(i*0.001*2*M_PI)));
             }
 
-            std::vector<cv::Point2f> result = system.run(step);
+            std::vector<cv::Point2f> result = system.run(signal);
 
             plot << "step = [";
-            for (int i = 0; i < step.size(); i++) {
-                plot << " " << step[i].x;
+            for (int i = 0; i < signal.size(); i++) {
+                plot << " " << signal[i].x;
             }
 
             plot << " ]" << std::endl;
 
             plot << "sinusoidal = [";
-            for (int i = 0; i < step.size(); i++) {
-                plot << " " << step[i].y;
+            for (int i = 0; i < signal.size(); i++) {
+                plot << " " << signal[i].y;
             }
 
             plot << " ]" << std::endl;
@@ -203,6 +257,9 @@ void ImageMotionModel::run() {
 
             plot << "pause" << std::endl;;
 
+            // close the output file
+            plot.close();
+
             return;
 
         }
@@ -213,42 +270,59 @@ void ImageMotionModel::run() {
         // update the old mean value
         old_mean = current_mean;
 
-        // process the interpolated signal
+        // clear the output
+        output.clear();
 
-        std::vector<cv::Point2f> out = system.run(interpolated);
-        //std::cout << std::endl << "Output: " << out << std::endl;
+        // process the interpolated signal
+        output = system.run(interpolated);
 
         // get the output size
-        output_size = out.size();
+        output_size = output.size();
 
         // move the fovea
         for (int i = 0; i < output_size; i++) {
 
-            translation += out[i]*0.001;
+            translation += output[i]*0.001;
 
         }
 
+        if (current_mean.x != 0 || current_mean.y != 0) {
+
+            // computes the error
+            error = current_mean - translation;
+
+            error_file << " " << error;
+
+        }
 
 
         if (1 < translation.x || -1 > translation.x) {
-            fovea.x += (int) std::floor(translation.x + 0.5);
-            // std::cout << std::endl << "Fovea x: " << fovea.x << std::endl;
-            translation.x = 0;
+
+            int x = (int) std::floor(translation.x + 0.5);
+
+            fovea.x += x;
+
+            translation.x -= x;
+
         }
 
         if (1 < translation.y || -1 > translation.y) {
-            fovea.y += (int) std::floor(translation.y + 0.5);
-            // std::cout << std::endl << "Fovea y: " << fovea.y << std::endl;
-            translation.y = 0;
+
+            int y = (int) std::floor(translation.y + 0.5);
+
+            fovea.y += y;
+
+            translation.y -= y;
+
         }
 
         if (1 > fovea.x) {
 
             fovea.x = 1;
 
-        } else if (fovea.x > frame.cols - 101) {
+        } else if (fovea.x > frame.cols - (fovea.width+1)) {
 
-            fovea.x = frame.cols - 101;
+            fovea.x = frame.cols - (fovea.width + 1);
 
         }
 
@@ -256,9 +330,9 @@ void ImageMotionModel::run() {
 
             fovea.y = 1;
 
-        } else if (fovea.y > frame.rows - 101) {
+        } else if (fovea.y > frame.rows - (fovea.width + 1)) {
 
-            fovea.y = frame.rows - 101;
+            fovea.y = frame.rows - (fovea.width + 1);
 
         }
 
@@ -291,40 +365,18 @@ void ImageMotionModel::run() {
         // get the next frame
         video >> frame;
 
-
-        // optical flow - plant velocity command
-
-        // interpolation
-
-
-        // delay
-
-        // process first pathway
-        // linear gain
-        // second order LOW PASS filter
-
-        // optical flow derivative
-
-        // process second pathway
-        // impulse gain
-        // second order LOW PASS filter
-
-        // process third pathway
-        // smooth gain
-        // second order LOW PASS filter
-
-        // sum all paths
-
-        // signal integration
-
-        // low pass filtering
-
-        // feedback to retina and summing
-
     }
 
-    //
-    plot.close();
+    error_file << " ]" << std::endl;
+
+    error_file << "graphics_toolkit('gnuplot')" << std::endl;
+
+    error_file << "plot(1:length(error), error)" << std::endl;
+
+    error_file << "pause" << std::endl;
+
+    error_file.close();
+
 }
 
 // the linear interpolation method

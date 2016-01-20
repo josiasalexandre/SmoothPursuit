@@ -38,12 +38,6 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
             // update the output
             output = buffer->pop();
 
-            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
-
-                std::cout << std::endl << "Impulse recebeu coisa errada: " << output << std::endl;
-
-            }
-
             // update the horizontal
             if (c < output.x) {
 
@@ -79,11 +73,11 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 output.y = 0.0;
 
             }
-
-            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
-
-                std::cout << std::endl << "Impulse produziu coisa errada: " << output << std::endl;
-
+            if (output.x != 0) {
+                std::cout << std::endl << "Impulse.x: " << output.x << std::endl;
+            }
+            if (output.y != 0) {
+                std::cout << std::endl << "Impulse.y: " << output.y << std::endl;
             }
 
             // send the output value to external devices

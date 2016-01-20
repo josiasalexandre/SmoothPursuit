@@ -41,18 +41,10 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
             // get the new value
             new_value = buffer->pop();
 
-            if (new_value != new_value || std::isinf(new_value.x)  || std::isinf(new_value.y)) {
-                std::cout << std::endl << "Differentiator recebeu coisa errada: " << new_value << std::endl;
-                assert(false);
-            }
+            // computes the output
             output = new_value - old_value;
 
-            if (output != output || std::isinf(output.x)  || std::isinf(output.y)) {
-                std::cout << std::endl << "Differentiator produziu coisa errada: " << output << std::endl;
-                assert(false);
-            }
-
-
+            // save the new value
             old_value = new_value;
 
             // send the value to external devices

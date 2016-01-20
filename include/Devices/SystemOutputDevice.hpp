@@ -89,7 +89,6 @@ class SystemOutputDevice : virtual public DeviceInput<T> {
             // send to the output vector
             output->push_back(out);
 
-
         }
 
         // add a signal source to the current input

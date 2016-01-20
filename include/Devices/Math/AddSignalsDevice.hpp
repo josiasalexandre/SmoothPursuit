@@ -27,42 +27,14 @@ class AddSignalsDevice : virtual public MultInputDevice<T, T, N> {
 
             // get the null value
             T tmp = MultInputDevice<T, T, N>::inputs[0].first.get_null_value();
-            if (tmp != tmp) {
-                std::cout << std::endl << "O problema está no get_null_value" << std::endl;
-                assert(tmp == tmp);
-            }
-            T poped;
 
             // sum all the values
             for (int i = 0; i < N; i++) {
 
                 if (!MultInputDevice<T, T, N>::inputs[i].first.empty()) {
 
-                    poped = MultInputDevice<T, T, N>::inputs[i].first.pop();
-
-                    if (poped == poped && tmp != tmp) {
-
-                        std::cout << std::endl << "O problema está no ADD_SIGNALS_DEVICE_H" << std::endl;
-                        std::cout << std::endl << "Poped: " << poped << std::endl;
-                        std::cout << std::endl << "TMP: " << tmp << std::endl;
-                        tmp = tmp + poped;
-                        std::cout << std::endl << "TMP after: " << tmp << std::endl;
-
-                         assert(tmp == tmp);
-
-                    }
-                    tmp = tmp + poped;
-                    if (poped == poped && tmp != tmp) {
-
-                        std::cout << std::endl << "O problema está no ADD_SIGNALS_DEVICE_H after" << std::endl;
-                        std::cout << std::endl << "Poped: " << poped << std::endl;
-                        std::cout << std::endl << "TMP: " << tmp << std::endl;
-                        tmp = tmp + poped;
-                        std::cout << std::endl << "TMP after: " << tmp << std::endl;
-
-                         assert(tmp == tmp);
-
-                    }
+                    // computes the new value
+                    tmp = tmp + MultInputDevice<T, T, N>::inputs[i].first.pop();
 
                 }
 

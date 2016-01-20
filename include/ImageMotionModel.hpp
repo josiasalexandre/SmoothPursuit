@@ -38,7 +38,7 @@ class ImageMotionModel {
         void select_roi();
 
         // the interpolated signal
-        std::vector<cv::Point2f> interpolated;
+        std::vector<cv::Point2f> interpolated, output;
         cv::Point2f old_mean, current_mean;
         bool interp;
 

@@ -56,7 +56,6 @@ class DSPSystem {
 
             // the delay device
             DelayDevice *delay_1 = new DelayDevice(72-25);
-            // DelayDevice *delay_1 = new DelayDevice(72-25);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
@@ -65,7 +64,7 @@ class DSPSystem {
             // input_buffer = linear_gain->get_buffer();
 
             // the low pass filter
-            FIRDevice<41> *low_pass_1 = new FIRDevice<41>(1000, 5, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<41> *low_pass_1 = new FIRDevice<41>(1000, 15, LOW_PASS, HAMMING_WINDOW);
 
             // derivative
             FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(cv::Point2f(0.0, 0.0));
@@ -74,13 +73,13 @@ class DSPSystem {
             ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500, 0.00015, 3000);
 
             // the low pass
-            FIRDevice<41> *low_pass_2 = new FIRDevice<41>(1000, 10, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<41> *low_pass_2 = new FIRDevice<41>(1000, 25, LOW_PASS, HAMMING_WINDOW);
 
             // THIRD PATHWAY
             SmoothGainDevice *smooth_gain = new SmoothGainDevice(28, 0.1, 0.16, 500, 18.5);
 
             // the low pass
-            FIRDevice<41> *low_pass_3 = new FIRDevice<41>(1000, 40, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<41> *low_pass_3 = new FIRDevice<41>(1000, 30, LOW_PASS, HAMMING_WINDOW);
 
             // summ all paths
             AddSignalsDevice<cv::Point2f, 3> *sum = new AddSignalsDevice<cv::Point2f, 3>(cv::Point2f(0.0, 0.0));
@@ -97,9 +96,6 @@ class DSPSystem {
             // the feedback gain
             LinearGainDevice *feedback_gain = new LinearGainDevice(1);
 
-            // Saturation
-            SaturationDevice *saturation = new SaturationDevice(30);
-
             // the system output
             SystemOutputDevice<cv::Point2f> *output_vector = new SystemOutputDevice<cv::Point2f>(&output);
 
@@ -109,8 +105,8 @@ class DSPSystem {
 
 
             // connect the subtract output to linear gain input
-            linear_gain->add_signal_source(subtract);
-            //linear_gain->add_signal_source(delay_1);
+            //linear_gain->add_signal_source(subtract);
+            linear_gain->add_signal_source(delay_1);
 
             // connect the low_pass_1 to the linear gain
             low_pass_1->add_signal_source(linear_gain);
@@ -141,23 +137,12 @@ class DSPSystem {
             sum->add_signal_source(low_pass_1);
             sum->add_signal_source(low_pass_2);
             sum->add_signal_source(low_pass_3);
-            // sum->add_signal_source(integrator);
 
-            // connect the saturation to the feedback
-            // saturation->add_signal_source(integrator);
-
-            //integrator->add_signal_source(low_pass_1);
+            // connect the integrator to the sum
             integrator->add_signal_source(sum);
-            //integrator->add_signal_source(smooth_gain);
 
             // connect the integrator to the plant device
-            // plant->add_signal_source(low_pass_1);
-            // plant->add_signal_source(low_pass_1);
-            // plant->add_signal_source(sum);
-            // plant->add_signal_source(linear_gain);
             plant->add_signal_source(integrator);
-            //plant->add_signal_source(saturation);
-
 
             // control the feedback gain
             feedback_gain->add_signal_source(plant);
@@ -167,12 +152,11 @@ class DSPSystem {
 
             // connect the plant to output
             output_vector->add_signal_source(plant);
-//             output_vector->add_signal_source(linear_gain);
 
             // SAVE THE DEVICES
             input_devices.push_back(subtract);
             on_devices.push_back(delay_1);
-//             on_devices.push_back(delay_2);
+            // on_devices.push_back(delay_2);
             on_devices.push_back(linear_gain);
             on_devices.push_back(low_pass_1);
             on_devices.push_back(differentiator);
@@ -184,7 +168,6 @@ class DSPSystem {
             on_devices.push_back(integrator);
             on_devices.push_back(plant);
             on_devices.push_back(feedback_gain);
-            on_devices.push_back(saturation);
             output_devices.push_back(output_vector);
 
         }
@@ -347,7 +330,6 @@ class DSPSystem {
                 }
 
                 dev = nullptr;
-
 
                 // run all the input_devices
                 while(input_devices.iterator()) {

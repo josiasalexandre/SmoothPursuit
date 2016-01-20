@@ -264,21 +264,7 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
         virtual void run() {
 
             // save the new sample
-            cv::Point2f poped = buffer->pop();
-            if (poped.x != poped.x || std::isinf(poped.x)) {
-                std::cout << std::endl << "FIR device recebeu coisa errada no x" << std::endl;
-                std::cout << std::endl << poped << std::endl;
-                assert(poped == poped);
-            }
-            if (poped.y != poped.y || std::isinf(poped.y)) {
-                std::cout << std::endl << "FIR device recebeu coisa errada no y" << std::endl;
-                std::cout << std::endl << poped << std::endl;
-                assert(poped == poped);
-            }
-
-            special_buffer[offset] = poped;
-
-            cv::Point2f tmp(0.0, 0.0);
+            special_buffer[offset] = buffer->pop();
 
             // the null value
             output.x = 0.0;
@@ -309,14 +295,6 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             }
 
-            if (output != output || std::isinf(output.x) || std::isinf(output.y)) {
-
-                std::cout << std::endl << "O problema está no fir device! Produziu: " << output << std::endl;
-
-                assert(false);
-
-            }
-
             // increments the offset and verify the overlapping case
             if (TAPS <= ++offset) {
 
@@ -324,8 +302,6 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
                 offset = 0;
 
             }
-
-
 
             // send the
             DeviceOutput<cv::Point2f>::send(output);

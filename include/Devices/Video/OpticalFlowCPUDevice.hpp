@@ -10,9 +10,15 @@
 #include <SingleInputDevice.hpp>
 #include <VideoSignalDevice.hpp>
 
+enum OpticalFlowDeviceType {OPTICAL_FLOW_FARNEBACK, OPTICAL_FLOW_LUKAS_KANADE_PYR};
+
+
 class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point2f> {
 
     private:
+
+        // the optical flow type
+        OpticalFlowDeviceType flow_type;
 
         // the frame fps
         float fps, dt;
@@ -29,12 +35,32 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
         // the output
         cv::Point2f mean;
 
+        // OPTICAL_FLOW_LUKAS_KANADE_PYR
+        cv::TermCriteria termcrit;
+        cv::Size subPixWinSize, winSize;
+
+        const int MAX_COUNT;
+        bool needToInit;
+
+        // the good point to track
+        std::vector<cv::Point2f> points[2];
+
+        // the displacement between the points
+        cv::Point2f displacement;
+
+        std::vector<uchar> status;
+        std::vector<float> err;
+
     public:
 
         // basic constructor
-        OpticalFlowCPUDevice(cv::Mat v_null) :
-                                                SingleInputDevice<cv::Mat, cv::Point2f>::SingleInputDevice(v_null),
-                                                dt(1.0/25.0), mean(0.0)
+        OpticalFlowCPUDevice(cv::Mat v_null, OpticalFlowDeviceType opt_type) :
+            SingleInputDevice<cv::Mat, cv::Point2f>::SingleInputDevice(v_null),
+            dt(1.0/25.0), mean(0.0), flow_type(opt_type),
+            termcrit(cv::TermCriteria::COUNT | cv::TermCriteria::EPS,20,0.03),
+            subPixWinSize(10,10), winSize(31,31), MAX_COUNT(500), needToInit(true),
+            displacement(0.0, 0.0)
+
         {
 
              buffer = SingleInputDevice<cv::Mat, cv::Point2f>::get_buffer();
@@ -101,36 +127,99 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
 
                 if(!old_gray.empty()) {
 
-                    cv::calcOpticalFlowFarneback(old_gray, gray, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
+                    if (OPTICAL_FLOW_FARNEBACK == flow_type) {
 
-                    uflow.copyTo(flow);
 
-                    for(int i = 0; i < flow.rows; i++) {
+                        cv::calcOpticalFlowFarneback(old_gray, gray, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
 
-                        cv::Point2f *row = flow.ptr<cv::Point2f>(i);
+                        uflow.copyTo(flow);
 
-                        for(int j = 0; j < flow.cols; j++) {
+                        for(int i = 0; i < flow.rows; i++) {
 
-                            mean += row[j];
+                            cv::Point2f *row = flow.ptr<cv::Point2f>(i);
+
+                            for(int j = 0; j < flow.cols; j++) {
+
+                                if (std::fabs(mean.x) < std::fabs(row[j].x)) {
+                                    mean.x = row[j].x;
+                                }
+
+                                if (std::fabs(mean.y) < std::fabs(row[j].y)) {
+                                    mean.x = row[j].y;
+                                }
+
+                            }
 
                         }
+
+
+                        if (0 == flow.rows || 0 == flow.cols) {
+
+                            mean.x = 0.0;
+                            mean.y = 0.0;
+
+                        }
+
+                    } else if (OPTICAL_FLOW_LUKAS_KANADE_PYR == flow_type) {
+
+                        if (needToInit) {
+
+                            // automatic initialization
+                            cv::goodFeaturesToTrack(old_gray, points[0], 100, 0.01, 10, cv::Mat(), 3, 0, 0.04);
+                            cv::cornerSubPix(old_gray, points[0], subPixWinSize, cv::Size(-1,-1), termcrit);
+                            needToInit = false;
+
+                        }
+
+                        // compúting the optical flow
+                        cv::calcOpticalFlowPyrLK(old_gray, gray, points[0], points[1], status, err, winSize, 3, termcrit, 0, 0.001);
+
+                        if (1 > points[1].size()) {
+                            needToInit = true;
+                        }
+
+                        int k = 0;
+
+                        displacement.x = 0;
+                        displacement.y = 0;
+
+                        for( int i = 0; i < points[1].size(); i++ ) {
+
+                            if( !status[i]) {
+                                continue;
+                            }
+
+                            displacement = points[1][i] - points[0][i];
+
+                            if (std::fabs(displacement.x) > std::fabs(mean.x)) {
+
+                                mean.x = displacement.x;
+
+                            }
+
+                            if (std::fabs(displacement.y) > std::fabs(mean.y)) {
+
+                                mean.y = displacement.y;
+
+                            }
+
+                            points[1][k++] = points[1][i];
+
+                        }
+
+                        // resize the points
+                        points[1].resize(k);
+
+                        // swap the points
+                        std::swap(points[1], points[0]);
+
 
                     }
 
                 }
 
+                // swap the gray images
                 std::swap(old_gray, gray);
-
-                if (0 != flow.rows && 0 != flow.cols) {
-
-                    mean /= ((float) flow.rows*flow.cols);
-
-                } else {
-
-                    mean.x = 0.0;
-                    mean.y = 0.0;
-
-                }
 
             }
 
