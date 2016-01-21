@@ -44,7 +44,7 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 // update the output
                 output.x = a*log(b*output.x + 1);
 
-            } else if (-c > -output.x) {
+            } else if (-c > output.x) {
 
                 // update the output
                 output.x = -a*log(-(b*output.x + 1));
@@ -62,7 +62,7 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 // update the output
                 output.y = a*log(b*output.y + 1);
 
-            } else if (-c > -output.y) {
+            } else if (-c > output.y) {
 
                 // update the output
                 output.y = -a*log(-(b*output.y + 1));
@@ -73,10 +73,12 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 output.y = 0.0;
 
             }
-            if (output.x != 0) {
+
+            if (0 != output.x) {
                 std::cout << std::endl << "Impulse.x: " << output.x << std::endl;
             }
-            if (output.y != 0) {
+
+            if (0 != output.y) {
                 std::cout << std::endl << "Impulse.y: " << output.y << std::endl;
             }
 

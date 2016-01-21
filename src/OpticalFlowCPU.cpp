@@ -51,8 +51,10 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
         } else if (OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU == flow_type) {
 
             if (needToInit) {
+
                 // automatic initialization
-                cv::goodFeaturesToTrack(old_gray, points[0], 100, 0.001, 10, cv::Mat(), 3, 0, 0.04);
+                cv::goodFeaturesToTrack(old_gray, points[0], 1, 0.001, 10, cv::Mat(), 3, 0, 0.04);
+
                 if (0 != points[0].size()) {
                     cv::cornerSubPix(old_gray, points[0], subPixWinSize, cv::Size(-1,-1), termcrit);
                     needToInit = false;
@@ -86,8 +88,10 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
                     for( int i = 0; i < points[1].size(); i++ ) {
 
                         if( !status[i]) {
+                            std::cout << std::endl << "Deu ruim, continuando" << std::endl;
                             continue;
                         }
+
 
                         if (std::fabs(displacement.x) < std::fabs(points[1][i].x - points[0][i].x)) {
 
@@ -104,16 +108,18 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
                         }
 
                         mean += points[1][i] - points[0][i];
+                        //mean += points[1][i];
 
                         points[1][k++] = points[1][i];
 
                         // draw the circles
-                        cv::circle(image, points[0][i], 3, cv::Scalar(0,255,0), -1, 8);
+                        cv::circle(image, points[1][i], 3, cv::Scalar(0,255,0), -1, 8);
 
                     }
 
                     // computes the mean
                     mean /= k;
+                    //mean = displacement;
 
                     // for drawing purpose
                     cv::imshow("tracking", image);

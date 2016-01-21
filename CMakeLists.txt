@@ -18,11 +18,17 @@ include_directories(
     include/Devices/Filters/
     include/Devices/Interpolation//
     include/ListT/
+    tests/
 )
 
 set(DSP_LIB_SOURCES
     src/OpticalFlowCPU.cpp
     src/ImageMotionModel.cpp
+    src/StupidSlip.cpp
+)
+
+set(DSP_LIB_TEST_SOURCES
+    tests/pyrlkTest.cpp
 )
 
 ## Declare a C++ library

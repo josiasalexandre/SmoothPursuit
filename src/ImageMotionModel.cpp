@@ -10,9 +10,11 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     system(),
     interpolated(0),
     current_mean(0.0, 0.0),
-    old_mean(0.0, 0.0),
+    mean_z1(0.0, 0.0),
+    mean_z2(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
+    stupid(150),
     optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
     //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
@@ -43,9 +45,11 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     system(),
     interpolated(0),
     current_mean(0.0, 0.0),
-    old_mean(0.0, 0.0),
+    mean_z1(0.0, 0.0),
+    mean_z2(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
+    stupid(150),
     optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
     // optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
@@ -139,13 +143,21 @@ void ImageMotionModel::run() {
 
     cv::Point2f error(0.0, 0.0);
 
-    std::ofstream error_file;
+    std::ofstream error_file, signal_file;
 
     error_file.open("error.mat");
     if (!error_file.is_open()) {
         std::cout << std::endl << "Could not open the file error.mat" << std::endl;
         return;
     }
+    signal_file.open("signal.mat");
+    if (!signal_file.is_open()) {
+        std::cout << std::endl << "Could not open the file signal.mat" << std::endl;
+        return;
+    }
+
+    std::vector<cv::Point2f> input_signal(0);
+    std::vector<cv::Point2f> output_signal(0);
 
     error_file << "error = [";
 
@@ -155,30 +167,44 @@ void ImageMotionModel::run() {
 
         // optical flow
         // displacement?
-        current_mean = optical_flow.run(frame(fovea).clone());
+        current_mean = stupid.displacement(cv::Point2i(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
+        //current_mean = optical_flow.run(frame(fovea).clone());
+        current_mean.y = 0;
 
-        if (current_mean.x <)
+        if (current_mean != current_mean) {
+            current_mean = mean_z1;
+            std::cout << std::endl << NAN << std::endl;
+        }
+
+        //save the input signal
+        input_signal.push_back(current_mean);
+
         if (0.15 > std::fabs(current_mean.x)) {
 
             current_mean.x = 0.0;
 
-        } else if (0 > current_mean.x*translation.x) {
+        } /* else if (0 > current_mean.x*mean_z1.x) {
+
 
             //current_mean.x = -current_mean.x*;
-            current_mean.x *= -0.25;
+            current_mean.x *= 0.1;
 
         }
+        */
 
+        /*
         if (0.15 > std::fabs(current_mean.y)) {
 
             current_mean.y = 0.0;
 
-        } else if (0 > current_mean.y*translation.y) {
+        } else if (0 > current_mean.y*mean_z1.y) {
 
-            current_mean.y *= -0.25;
+            current_mean.y *= 0.1;
             //current_mean.y = -current_mean.y;
 
         }
+        */
+
 
         // considering displacement
         current_mean.x = current_mean.x/0.04;
@@ -187,7 +213,7 @@ void ImageMotionModel::run() {
         if (!interp) {
 
             // update the old mean value
-            old_mean = current_mean;
+            mean_z1 = current_mean;
 
             interp = true;
 
@@ -268,13 +294,16 @@ void ImageMotionModel::run() {
         linear_interpolation();
 
         // update the old mean value
-        old_mean = current_mean;
+        mean_z1 = current_mean;
 
         // clear the output
         output.clear();
 
         // process the interpolated signal
         output = system.run(interpolated);
+
+        //save the input signal
+        output_signal.insert(output_signal.end(), output.begin(), output.end());
 
         // get the output size
         output_size = output.size();
@@ -294,7 +323,6 @@ void ImageMotionModel::run() {
             error_file << " " << error;
 
         }
-
 
         if (1 < translation.x || -1 > translation.x) {
 
@@ -377,35 +405,81 @@ void ImageMotionModel::run() {
 
     error_file.close();
 
+    signal_file << "inputx = [";
+    // save the input and output signal
+
+    for (int i = 0; i < input_signal.size(); i++) {
+
+        signal_file << " " << input_signal[i].x;
+
+    }
+
+    signal_file << " ]" << std::endl;
+
+    signal_file << "inputy = [";
+    // save the input and output signal
+
+    for (int i = 0; i < input_signal.size(); i++) {
+
+        signal_file << " " << input_signal[i].y;
+
+    }
+
+    signal_file << " ]" << std::endl;
+
+    signal_file << "outputx = [";
+    for (int i = 0; i < output_signal.size(); i++) {
+
+        signal_file << " " << output_signal[i].x;
+
+    }
+
+    signal_file << " ]" << std::endl;
+
+    signal_file << "outputy = [";
+    for (int i = 0; i < output_signal.size(); i++) {
+
+        signal_file << " " << output_signal[i].y;
+
+    }
+
+    signal_file << " ]" << std::endl;
+
+    signal_file << std::endl << "graphics_toolkit('gnuplot')" << std::endl;
+
+    signal_file << "filt = fir1(80, 0.1)" << std::endl;
+
+    signal_file << "filtered = filter(filt, 1, inputx)" << std::endl;
+
+    signal_file << "plot(1:length(inputx), inputx)" << std::endl;
+
+    signal_file << "figure" << std::endl;
+
+    signal_file << "plot(1:length(filtered), filtered)" << std::endl;
+
+    signal_file << "figure" << std::endl;
+
+    signal_file << "plot(1:length(outputx), outputx)" << std::endl;
+
+    signal_file << "pause" << std::endl;
+
+    signal_file.close();
+
 }
 
 // the linear interpolation method
 void ImageMotionModel::linear_interpolation() {
 
-    unsigned int interp = (fs/fps) - 1;
-    float a1, a2;
-    cv::Point2f new_point;
-
-    // clear the the interpolation
     interpolated.clear();
 
-    // x interpolation
-    // save the first value
-    interpolated.push_back(old_mean);
+    interpolated.push_back(current_mean);
 
-    // get the inclination delta y / delta x
-    a1 = (current_mean.x - old_mean.x);
-    a2 = (current_mean.y - old_mean.y);
+    unsigned int interp = (fs/fps) - 1;
 
-    for (int i = 1; i <= interp; i++) {
+    for (int i = 0; i < interp; i++) {
 
-        new_point.x = a1*(i*0.001) + old_mean.x;
-        new_point.y = a2*(i*0.001) + old_mean.y;
-
-        interpolated.push_back(new_point);
+        interpolated.push_back(current_mean);
 
     }
-
-    // update the mean
 
 }

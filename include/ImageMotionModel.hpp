@@ -7,8 +7,10 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <OpticalFlowCPU.hpp>
+#include <StupidSlip.hpp>
 
 #include <DSPSystem.hpp>
+
 
 class ImageMotionModel {
 
@@ -32,6 +34,9 @@ class ImageMotionModel {
         // the optical flow object
         OpticalFlowCPU optical_flow;
 
+        // the stupid slip
+        StupidSlip stupid;
+
         // private methods
         void mouse_click_callback(int, int, int, int);
         static void mouse_click(int, int, int, int, void*);
@@ -39,7 +44,7 @@ class ImageMotionModel {
 
         // the interpolated signal
         std::vector<cv::Point2f> interpolated, output;
-        cv::Point2f old_mean, current_mean;
+        cv::Point2f mean_z1, mean_z2, expected_mean, current_mean;
         bool interp;
 
         // the DSP system

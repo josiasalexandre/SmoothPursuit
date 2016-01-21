@@ -2,6 +2,7 @@
 #define FIR_DEVICE_H
 
 #include <cmath>
+#include <fstream>
 
 #include <opencv2/opencv.hpp>
 
@@ -14,6 +15,8 @@ template<unsigned int TAPS>
 class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
     private:
+
+        std::ofstream low_pass_output;
 
         CircularBuffer<cv::Point2f> *buffer;
 
@@ -180,6 +183,15 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
             }
 
+            if (80 < TAPS) {
+
+                low_pass_output.open("low_pas.mat");
+                if (low_pass_output.is_open()) {
+                    low_pass_output << "low_pass_resultx = [";
+                }
+
+            }
+
         }
 
         // the basic constructor for band pass and band stop fir filters
@@ -260,6 +272,29 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
         }
 
+
+        // the destructor
+        virtual ~FIRDevice() {
+
+            if (80 < TAPS && low_pass_output.is_open()) {
+
+                low_pass_output << " ]" << std::endl;
+
+                low_pass_output << "graphics_toolkit('gnuplot')" << std::endl;
+
+                low_pass_output << "plot(1:length(low_pass_resultx), low_pass_resultx)" << std::endl;
+
+                low_pass_output << "pause" << std::endl;
+
+                low_pass_output.close();
+                std::cout << std::endl << "karaca 1" << std::endl;
+
+            } else {
+                std::cout << std::endl << "karaca" << std::endl;
+            }
+
+        };
+
         //
         virtual void run() {
 
@@ -300,6 +335,12 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
                 // reset the
                 offset = 0;
+
+            }
+
+            if (low_pass_output.is_open() && 80 < TAPS) {
+
+                low_pass_output << " " << output.x;
 
             }
 

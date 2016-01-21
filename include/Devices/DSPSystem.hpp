@@ -55,12 +55,13 @@ class DSPSystem {
             input_buffer = subtract->get_buffer(0);
 
             // the delay device
-            DelayDevice *delay_1 = new DelayDevice(72-25);
+            DelayDevice *delay_1 = new DelayDevice(10);
+            //DelayDevice *delay_1 = new DelayDevice(72-25);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
             // the linear gain
-            LinearGainDevice *linear_gain = new LinearGainDevice(8.3);
+            LinearGainDevice *linear_gain = new LinearGainDevice(6.3);
             // input_buffer = linear_gain->get_buffer();
 
             // the low pass filter
@@ -76,7 +77,7 @@ class DSPSystem {
             FIRDevice<41> *low_pass_2 = new FIRDevice<41>(1000, 25, LOW_PASS, HAMMING_WINDOW);
 
             // THIRD PATHWAY
-            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28, 0.1, 0.16, 500, 18.5);
+            SmoothGainDevice *smooth_gain = new SmoothGainDevice(25, 0.1, 0.16, 500, 18.5);
 
             // the low pass
             FIRDevice<41> *low_pass_3 = new FIRDevice<41>(1000, 30, LOW_PASS, HAMMING_WINDOW);
