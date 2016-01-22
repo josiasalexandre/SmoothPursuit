@@ -124,6 +124,7 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
             }
 
+
             // send the output value to external devices
             DeviceOutput<cv::Point2f>::send(output);
 

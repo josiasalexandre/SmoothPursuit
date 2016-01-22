@@ -48,21 +48,28 @@ class DSPSystem {
              *
              */
 
-            // subtract velocities
-            SubtractVelocityDevice<cv::Point2f> *subtract = new SubtractVelocityDevice<cv::Point2f>(cv::Point2f(0.0, 0.0));
+            // the input
+            LinearGainDevice *system_input = new LinearGainDevice(1.0);
 
             // get the input buffer
-            input_buffer = subtract->get_buffer(0);
+            input_buffer = system_input->get_buffer();
+
+            // subtract velocities - just to simulate the step and sinusoid inputs
+            // the fovea object already do the subtract
+            // SubtractVelocityDevice<cv::Point2f> *subtract = new SubtractVelocityDevice<cv::Point2f>(cv::Point2f(0.0, 0.0));
+
+            // get the input buffer
+            // input_buffer = subtract->get_buffer(0);
+            //subtract->add_signal_source(first_buffer, 0);
 
             // the delay device
             //DelayDevice *delay_1 = new DelayDevice(10);
-            DelayDevice *delay_1 = new DelayDevice(72-25);
+            DelayDevice *delay_1 = new DelayDevice(72 - 25 - 1);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
             // the linear gain
-            LinearGainDevice *linear_gain = new LinearGainDevice(7.1);
-            // input_buffer = linear_gain->get_buffer();
+            LinearGainDevice *linear_gain = new LinearGainDevice(5.2);
 
             // the low pass filter
             FIRDevice<61> *low_pass_1 = new FIRDevice<61>(1000, 5, LOW_PASS, HAMMING_WINDOW);
@@ -77,7 +84,7 @@ class DSPSystem {
             FIRDevice<61> *low_pass_2 = new FIRDevice<61>(1000, 8, LOW_PASS, HAMMING_WINDOW);
 
             // THIRD PATHWAY
-            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28, 0.8, 0.1, 500, 4.0);
+            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28*0.85, 0.08, 0.16, 500, 18.5);
 
             // the low pass
             FIRDevice<61> *low_pass_3 = new FIRDevice<61>(1000, 16, LOW_PASS, HAMMING_WINDOW);
@@ -98,10 +105,11 @@ class DSPSystem {
             LinearGainDevice *feedback_gain = new LinearGainDevice(1);
 
             // the system output
-            SystemOutputDevice<cv::Point2f> *output_vector = new SystemOutputDevice<cv::Point2f>(&output);
+            SystemOutputDevice<cv::Point2f> *system_output = new SystemOutputDevice<cv::Point2f>(&output);
 
             // CONNECT ALL DEVICES
-            delay_1->add_signal_source(subtract);
+            delay_1->add_signal_source(system_input);
+            //delay_1->add_signal_source(subtract);
             // delay_2->add_signal_source(subtract);
 
 
@@ -149,13 +157,14 @@ class DSPSystem {
             feedback_gain->add_signal_source(plant);
 
             // the feedback connection FOVEA
-            subtract->add_signal_source(feedback_gain, 1);
+            //subtract->add_signal_source(feedback_gain, 1);
 
             // connect the plant to output
-            output_vector->add_signal_source(plant);
+            system_output->add_signal_source(plant);
 
             // SAVE THE DEVICES
-            input_devices.push_back(subtract);
+            input_devices.push_back(system_input);
+            // input_devices.push_back(subtract);
             on_devices.push_back(delay_1);
             // on_devices.push_back(delay_2);
             on_devices.push_back(linear_gain);
@@ -169,7 +178,7 @@ class DSPSystem {
             on_devices.push_back(integrator);
             on_devices.push_back(plant);
             on_devices.push_back(feedback_gain);
-            output_devices.push_back(output_vector);
+            output_devices.push_back(system_output);
 
         }
 

@@ -78,11 +78,6 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
 
                     } else {
 
-                        // get the frame copy
-
-                        frame.copyTo(image);
-
-
                         int k = 0;
 
                         for( int i = 0; i < points[1].size(); i++ ) {
@@ -95,12 +90,7 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
 
                             points[1][k++] = points[1][i];
 
-                            // draw the circles
-                            cv::circle(image, points[1][i], 3, cv::Scalar(0,255,0), -1, 8);
-
                         }
-
-                        cv::imshow("draw", image);
 
                         // computes the mean
                         if (k != 0) {

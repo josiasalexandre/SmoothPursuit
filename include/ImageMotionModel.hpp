@@ -37,6 +37,9 @@ class ImageMotionModel {
         // the stupid slip
         StupidSlip stupid;
 
+        // for testing purpose
+        bool testing;
+
         // private methods
         void mouse_click_callback(int, int, int, int);
         static void mouse_click(int, int, int, int, void*);
@@ -46,8 +49,7 @@ class ImageMotionModel {
         // the interpolated signal
         std::vector<cv::Point2f> interpolated, output;
         cv::Point2f last_flow, expected_mean, current_flow;
-        bool interp;
-        cv::Point2f displacement, last_displacement;
+        cv::Point2f displacement;
 
         // the DSP system
         DSPSystem system;

@@ -14,12 +14,11 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     current_flow(0.0, 0.0),
     last_flow(0.0, 0.0),
     displacement(0.0, 0.0),
-    last_displacement(0.0, 0.0),
-    interp(false),
+    testing(false),
     translation(0.0, 0.0),
     stupid(150),
-    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
-    //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
+    //optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     // verify video capture object
@@ -50,12 +49,11 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     current_flow(0.0, 0.0),
     last_flow(0.0, 0.0),
     displacement(0.0, 0.0),
-    last_displacement(0.0, 0.0),
-    interp(false),
+    testing(false),
     translation(0.0, 0.0),
     stupid(150),
-    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
-    // optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
+    //optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     // verify video capture object
@@ -210,15 +208,19 @@ void ImageMotionModel::run() {
     std::vector<cv::Point2f> input_signal(0);
     std::vector<cv::Point2f> output_signal(0);
 
+    // image inside the fovea
+    cv::Mat cropped_frame;
+
     while(!frame.empty() && 'q' != keyboard) {
 
         // fovea position
+        cropped_frame = frame(fovea).clone();
+
+        // computes the displacement
+        displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), cropped_frame);
 
         // optical flow
-        // displacement?
-        displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
-
-        current_flow = optical_flow.run(frame(fovea).clone());
+        current_flow = optical_flow.run(cropped_frame);
 
         // verify th NaN and inf cases
         if (current_flow != current_flow || std::isinf(current_flow.x) || std::isinf(current_flow.y)) {
@@ -229,48 +231,11 @@ void ImageMotionModel::run() {
         // save the current flow to the input signal vector
         input_signal.push_back(current_flow);
 
-        // get the current flow x direction
-        if (0 > displacement.x*current_flow.x) {
-
-            current_flow.x = -current_flow.x;
-
-        }
-
-        // get the current flow y direction
-        if (0 > displacement.y*current_flow.y) {
-
-            current_flow.y = -current_flow.y;
-
-        }
-
-        if (0.1 > ((float) std::abs(displacement.x))/((float) fovea.width*0.4)) {
-
-            current_flow.x = 0;
-
-        }
-
-        if (0.1 > ((float) std::abs(displacement.y))/((float) fovea.width*0.4)) {
-
-            current_flow.y = 0;
-
-        }
-
         // save the current mean
         last_flow = current_flow;
 
-        // save the current displacement
-        last_displacement = displacement;
-
         // the first time? Used to run the step and sinusoidal input
-        if (!interp) {
-
-            // update the old mean value
-            last_flow = current_flow;
-
-            interp = true;
-
-            // continue
-            continue;
+        if (testing) {
 
             // file pointer
             std::ofstream plot;
@@ -349,6 +314,26 @@ void ImageMotionModel::run() {
             fovea.x += displacement.x;
             fovea.y += displacement.y;
 
+            if (1 > fovea.x) {
+
+                fovea.x = 1;
+
+            } else if (fovea.x > frame.cols - (fovea.width+1)) {
+
+                fovea.x = frame.cols - (fovea.width + 1);
+
+            }
+
+            if (1 > fovea.y) {
+
+                fovea.y = 1;
+
+            } else if (fovea.y > frame.rows - (fovea.width + 1)) {
+
+                fovea.y = frame.rows - (fovea.width + 1);
+
+            }
+
             current_flow.x = 0;
             current_flow.y = 0;
 
@@ -358,7 +343,7 @@ void ImageMotionModel::run() {
             // output
             output.clear();
 
-            // process the interpolated signal, jut to clear the system
+            // process the interpolated signal, jut to clear the entire system
             output = system.run(interpolated);
             output = system.run(interpolated);
 

@@ -37,9 +37,6 @@ class OpticalFlowCPU {
         std::vector<uchar> status;
         std::vector<float> err;
 
-        // draw the points
-        cv::Mat image;
-
     public:
 
         // basic constructor
