@@ -20,7 +20,7 @@ class ImageMotionModel {
         cv::VideoCapture video;
 
         // the frame rate and the sampling frequency
-        float fps, fs, inverse_fs;
+        float fps, fs;
 
         // the frame input
         cv::Mat frame;

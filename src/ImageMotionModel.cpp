@@ -22,8 +22,6 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
-    inverse_fs = 1.0/fs;
-
     // verify video capture object
     if (!video.isOpened()) {
 
@@ -59,8 +57,6 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
     // optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
-
-    inverse_fs = 1.0/fs;
 
     // verify video capture object
     if (!video.isOpened()) {
@@ -99,11 +95,12 @@ void ImageMotionModel::mouse_click(int event, int x, int y, int flags, void* par
 
 }
 
+// just centering the fovea at some inside red object
+// double click in the geometric object
+// press f to call this function
 void ImageMotionModel::find_roi(cv::Mat temp_window) {
 
     cv::Point2i center(0.0, 0.0);
-
-    cv::Vec3b *pixel;
 
     int k = 1;
     unsigned int red, green, blue;
@@ -139,7 +136,6 @@ void ImageMotionModel::find_roi(cv::Mat temp_window) {
 
 }
 
-
 // get the REGION OF INTEREST
 void ImageMotionModel::select_roi() {
 
@@ -173,6 +169,7 @@ void ImageMotionModel::select_roi() {
 
         } else if ('f' == (char) keyboard) {
 
+            // center the fovea at some inside red object
             find_roi(frame(fovea).clone());
 
         }
@@ -194,26 +191,24 @@ void ImageMotionModel::run() {
 
     cv::Point2f error(0.0, 0.0);
 
+    // some output files to save octave plots
     std::ofstream error_file, signal_file;
-
 
     error_file.open("error.mat");
     if (!error_file.is_open()) {
         std::cout << std::endl << "Could not open the file error.mat" << std::endl;
         return;
     }
+
     signal_file.open("signal.mat");
     if (!signal_file.is_open()) {
         std::cout << std::endl << "Could not open the file signal.mat" << std::endl;
         return;
     }
 
+    // vectors to store the optical flow and the system output
     std::vector<cv::Point2f> input_signal(0);
     std::vector<cv::Point2f> output_signal(0);
-
-    float dispx;
-
-    int counter_x = 0, counter_y = 0;
 
     while(!frame.empty() && 'q' != keyboard) {
 
@@ -223,7 +218,7 @@ void ImageMotionModel::run() {
         // displacement?
         displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
 
-        current_flow = optical_flow.run(frame.clone());
+        current_flow = optical_flow.run(frame(fovea).clone());
 
         // verify th NaN and inf cases
         if (current_flow != current_flow || std::isinf(current_flow.x) || std::isinf(current_flow.y)) {
@@ -231,12 +226,17 @@ void ImageMotionModel::run() {
             std::cout << std::endl << NAN << std::endl;
         }
 
+        // save the current flow to the input signal vector
+        input_signal.push_back(current_flow);
+
+        // get the current flow x direction
         if (0 > displacement.x*current_flow.x) {
 
             current_flow.x = -current_flow.x;
 
         }
 
+        // get the current flow y direction
         if (0 > displacement.y*current_flow.y) {
 
             current_flow.y = -current_flow.y;
