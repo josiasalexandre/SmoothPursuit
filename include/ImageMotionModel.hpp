@@ -45,9 +45,9 @@ class ImageMotionModel {
 
         // the interpolated signal
         std::vector<cv::Point2f> interpolated, output;
-        cv::Point2f mean_z1, mean_z2, expected_mean, current_mean;
+        cv::Point2f last_flow, expected_mean, current_flow;
         bool interp;
-        cv::Point2f displacement, displacement_z1;
+        cv::Point2f displacement, last_displacement;
 
         // the DSP system
         DSPSystem system;

@@ -11,11 +11,10 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     fovea(300.0, 200.0, 100, 100),
     system(),
     interpolated(0),
-    current_mean(0.0, 0.0),
-    mean_z1(0.0, 0.0),
-    mean_z2(0.0, 0.0),
+    current_flow(0.0, 0.0),
+    last_flow(0.0, 0.0),
     displacement(0.0, 0.0),
-    displacement_z1(0.0, 0.0),
+    last_displacement(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
     stupid(150),
@@ -50,11 +49,10 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     fovea(300.0, 200.0, 100, 100),
     system(),
     interpolated(0),
-    current_mean(0.0, 0.0),
-    mean_z1(0.0, 0.0),
-    mean_z2(0.0, 0.0),
+    current_flow(0.0, 0.0),
+    last_flow(0.0, 0.0),
     displacement(0.0, 0.0),
-    displacement_z1(0.0, 0.0),
+    last_displacement(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
     stupid(150),
@@ -225,77 +223,49 @@ void ImageMotionModel::run() {
         // displacement?
         displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
 
-        current_mean = optical_flow.run(frame(fovea).clone());
+        current_flow = optical_flow.run(frame.clone());
 
         // verify th NaN and inf cases
-        if (current_mean != current_mean || std::isinf(current_mean.x) || std::isinf(current_mean.y)) {
-            current_mean = mean_z1;
+        if (current_flow != current_flow || std::isinf(current_flow.x) || std::isinf(current_flow.y)) {
+            current_flow = last_flow;
             std::cout << std::endl << NAN << std::endl;
         }
 
-        if (0 > displacement.x*current_mean.x) {
+        if (0 > displacement.x*current_flow.x) {
 
-            current_mean.x = -current_mean.x;
-
-        }
-
-        if (0 > displacement.y*current_mean.y) {
-
-            current_mean.y = -current_mean.y;
+            current_flow.x = -current_flow.x;
 
         }
 
+        if (0 > displacement.y*current_flow.y) {
+
+            current_flow.y = -current_flow.y;
+
+        }
 
         if (0.1 > ((float) std::abs(displacement.x))/((float) fovea.width*0.4)) {
 
-            current_mean.x = 0;
+            current_flow.x = 0;
 
         }
 
         if (0.1 > ((float) std::abs(displacement.y))/((float) fovea.width*0.4)) {
 
-            current_mean.y = 0;
+            current_flow.y = 0;
 
         }
 
-        // saccade
-        if (fovea.width*0.4 < std::fabs(displacement.x) || fovea.height*0.4 < std::fabs(displacement.y)) {
+        // save the current mean
+        last_flow = current_flow;
 
+        // save the current displacement
+        last_displacement = displacement;
 
-            fovea.x += displacement.x;
-            fovea.y += displacement.y;
-
-            current_mean.x = 0;
-            current_mean.y = 0;
-
-            // interpolate
-            linear_interpolation();
-
-            // output
-            output.clear();
-
-            // process the interpolated signal, jut to clear the system
-            output = system.run(interpolated);
-            output = system.run(interpolated);
-
-            translation.x = 0;
-            translation.y = 0;
-
-            continue;
-
-        }
-
-        // considering displacement
-        current_mean.x = current_mean.x*fps;
-        current_mean.y = current_mean.y*fps;
-
-        //save the input signal
-        input_signal.push_back(current_mean);
-
+        // the first time? Used to run the step and sinusoidal input
         if (!interp) {
 
             // update the old mean value
-            mean_z1 = current_mean;
+            last_flow = current_flow;
 
             interp = true;
 
@@ -372,6 +342,37 @@ void ImageMotionModel::run() {
 
         }
 
+        // saccade
+        if (fovea.width*0.4 < std::fabs(displacement.x) || fovea.height*0.4 < std::fabs(displacement.y)) {
+
+
+            fovea.x += displacement.x;
+            fovea.y += displacement.y;
+
+            current_flow.x = 0;
+            current_flow.y = 0;
+
+            // interpolate
+            linear_interpolation();
+
+            // output
+            output.clear();
+
+            // process the interpolated signal, jut to clear the system
+            output = system.run(interpolated);
+            output = system.run(interpolated);
+
+            translation.x = 0;
+            translation.y = 0;
+
+            continue;
+
+        }
+
+        // considering displacement
+        current_flow.x = current_flow.x*fps;
+        current_flow.y = current_flow.y*fps;
+
         // interpolate
         linear_interpolation();
 
@@ -395,10 +396,10 @@ void ImageMotionModel::run() {
 
         }
 
-        if (current_mean.x != 0 || current_mean.y != 0) {
+        if (current_flow.x != 0 || current_flow.y != 0) {
 
             // computes the error
-            error = current_mean - translation;
+            error = current_flow - translation;
 
             error_file << " " << error;
 
@@ -473,6 +474,7 @@ void ImageMotionModel::run() {
 
     }
 
+    // savin some text file to run octave simulations and plots
     error_file << " ]" << std::endl;
 
     error_file << "graphics_toolkit('gnuplot')" << std::endl;
@@ -550,13 +552,13 @@ void ImageMotionModel::linear_interpolation() {
 
     interpolated.clear();
 
-    interpolated.push_back(current_mean);
+    interpolated.push_back(current_flow);
 
     unsigned int interp = (fs/fps) - 1;
 
     for (int i = 0; i < interp; i++) {
 
-        interpolated.push_back(current_mean);
+        interpolated.push_back(current_flow);
 
     }
 
