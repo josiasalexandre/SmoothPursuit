@@ -16,7 +16,7 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
         CircularBuffer<cv::Point2f> *buffer;
 
         // the output value
-        cv::Point2f output;
+        cv::Point2f new_value, output;
 
 
     public:
@@ -36,18 +36,17 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
         virtual void run() {
 
             // update the output
-            output = buffer->pop();
+            new_value = buffer->pop();
 
-            // update the horizontal
-            if (c < output.x) {
+            if (c < new_value.x) {
+
+                //update the output
+                output.x = a*log(b*new_value.x + 1);
+
+            } else if (-c > new_value.x) {
 
                 // update the output
-                output.x = a*log(b*output.x + 1);
-
-            } else if (-c > output.x) {
-
-                // update the output
-                output.x = -a*log(-(b*output.x + 1));
+                output.x = -a*log(b*(-new_value.x) + 1);
 
             } else {
 
@@ -57,29 +56,21 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
             }
 
             // update the vertical
-            if (c < output.y) {
+            if (c < new_value.y) {
 
                 // update the output
-                output.y = a*log(b*output.y + 1);
+                output.y = a*log(b*new_value.y + 1);
 
             } else if (-c > output.y) {
 
                 // update the output
-                output.y = -a*log(-(b*output.y + 1));
+                output.y = -a*log(b*(-new_value.y) + 1);
 
             } else {
 
                 // update the output
                 output.y = 0.0;
 
-            }
-
-            if (0 != output.x) {
-                std::cout << std::endl << "Impulse.x: " << output.x << std::endl;
-            }
-
-            if (0 != output.y) {
-                std::cout << std::endl << "Impulse.y: " << output.y << std::endl;
             }
 
             // send the output value to external devices

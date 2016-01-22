@@ -43,17 +43,17 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
             log_input.y = b*new_value.y + 1;
 
             // update the horizontal
-            if (0 < log_input.x) {
+            if (0 < new_value.x) {
 
                 if (d > new_value.x && e < new_value.x) {
 
                     // update the output
-                    output.x = a*log(log_input.x);
+                    output.x = a*log(b*new_value.x + 1);
 
                 } else if (e > new_value.x) {
 
                     // update the output
-                    output.x = (c*new_value.x*new_value.x)*a*log(log_input.x);
+                    output.x = (c*new_value.x*new_value.x)*a*log(b*new_value.x + 1);
 
                 } else {
 
@@ -62,17 +62,17 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
                 }
 
-            } else if (0 > log_input.x) {
+            } else if (0 > output.x) {
 
                 if (-d < new_value.x && -e > new_value.x) {
 
                     // update the output
-                    output.x = -a*log(-log_input.x);
+                    output.x = -a*log(b*(-new_value.x) + 1);
 
                 } else if (-e < new_value.x) {
 
                     // update the output
-                    output.x = -(c*new_value.x*new_value.x)*a*log(-log_input.x);
+                    output.x = -(c*new_value.x*new_value.x)*a*log(b*(-new_value.x) + 1);
 
                 } else {
 
@@ -84,17 +84,17 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
             }
 
             // update the vertical
-            if (0 < log_input.y) {
+            if (0 < new_value.y) {
 
                 if (d > new_value.y && e < new_value.y) {
 
                     // update the output
-                    output.y = a*log(log_input.y);
+                    output.y = a*log(b*new_value.y + 1);
 
                 } else if (e > new_value.y) {
 
                     // update the output
-                    output.y = (c*new_value.y*new_value.y)*a*log(log_input.y);
+                    output.y = (c*new_value.y*new_value.y)*a*log(b*new_value.y + 1);
 
                 } else {
 
@@ -103,17 +103,17 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
                 }
 
-            } else if (0 > log_input.y) {
+            } else if (0 > new_value.y) {
 
                 if (-d < new_value.y && -e > new_value.y) {
 
                     // update the output
-                    output.y = -a*log(-log_input.y);
+                    output.y = -a*log(b*(-new_value.y) + 1);
 
                 } else if (-e < new_value.y) {
 
                     // update the output
-                    output.y = -(c*new_value.y*new_value.y)*a*log(-log_input.y);
+                    output.y = -(c*new_value.y*new_value.y)*a*log(b*(-new_value.y) + 1);
 
                 } else {
 

@@ -34,9 +34,6 @@ class OpticalFlowCPU {
         // the good point to track
         std::vector<cv::Point2f> points[2];
 
-        // the displacement between the points
-        cv::Point2f displacement;
-
         std::vector<uchar> status;
         std::vector<float> err;
 

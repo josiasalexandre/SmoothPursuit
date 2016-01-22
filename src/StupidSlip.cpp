@@ -3,29 +3,28 @@
 // basic constructor
 StupidSlip::StupidSlip(unsigned int value) : threshold(value) {}
 
-cv::Point2i StupidSlip::displacement(cv::Point2i center, cv::Mat frame) {
+cv::Point2f StupidSlip::displacement(cv::Point2i center, cv::Mat frame) {
 
-    // convert to gray
-    cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-
-    cv::Point2i disp(0.0, 0.0);
-
-    cv::Vec3b *pixel;
+    cv::Point2i new_value(0.0, 0.0), disp(0.0, 0.0);
 
     int k = 1;
 
-    if (!gray.empty()) {
+    unsigned int red, green, blue;
 
-        for (int i = 0; i < gray.rows; i++) {
+    if (!frame.empty()) {
 
-            for (int j = 0; j < gray.cols; j++) {
+        for (int i = 0; i < frame.rows; i++) {
 
-                pixel = &gray.at<cv::Vec3b>(i, j);
+            for (int j = 0; j < frame.cols; j++) {
 
-                if (threshold >= (unsigned int) pixel->val[0]) {
+                blue = frame.at<cv::Vec3b>(i, j).val[0];
+                green = frame.at<cv::Vec3b>(i, j).val[1];
+                red = frame.at<cv::Vec3b>(i, j).val[2];
 
-                    disp.x += j;
-                    disp.y += i;
+                if (threshold < red && threshold > green && threshold < blue) {
+
+                    new_value.x += j;
+                    new_value.y += i;
                     k++;
 
                 }
@@ -34,16 +33,14 @@ cv::Point2i StupidSlip::displacement(cv::Point2i center, cv::Mat frame) {
 
         }
 
-        disp /= k;
-        disp -= center;
+        new_value /= k;
 
-    } else {
+        disp = new_value - center;
+        disp.x = std::floor(disp.x + 0.6);
+        disp.y = std::floor(disp.y + 0.6);
 
-        std::cout << std::endl << "FRAME VAZIO" << std::endl;
 
     }
-
-    cv::imshow("stupid", gray);
 
     return disp;
 

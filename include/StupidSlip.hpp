@@ -23,7 +23,7 @@ class StupidSlip {
         StupidSlip(unsigned int);
 
         // calculates the displacement from the fovea's center
-        cv::Point2i displacement(cv::Point2i, cv::Mat);
+        cv::Point2f displacement(cv::Point2i, cv::Mat);
 
 
 };

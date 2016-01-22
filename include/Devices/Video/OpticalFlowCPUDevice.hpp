@@ -165,7 +165,7 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
                         if (needToInit) {
 
                             // automatic initialization
-                            cv::goodFeaturesToTrack(old_gray, points[0], 100, 0.01, 10, cv::Mat(), 3, 0, 0.04);
+                            cv::goodFeaturesToTrack(old_gray, points[0], 1, 0.01, 10, cv::Mat(), 3, 0, 0.04);
                             cv::cornerSubPix(old_gray, points[0], subPixWinSize, cv::Size(-1,-1), termcrit);
                             needToInit = false;
 
@@ -180,26 +180,22 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
 
                         int k = 0;
 
-                        displacement.x = 0;
-                        displacement.y = 0;
-
                         for( int i = 0; i < points[1].size(); i++ ) {
 
                             if( !status[i]) {
                                 continue;
                             }
 
-                            displacement = points[1][i] - points[0][i];
 
-                            if (std::fabs(displacement.x) > std::fabs(mean.x)) {
+                            if (std::fabs(mean.x) < std::fabs(points[1][i].x)) {
 
-                                mean.x = displacement.x;
+                                mean.x = points[1][i].x;
 
                             }
 
-                            if (std::fabs(displacement.y) > std::fabs(mean.y)) {
+                            if (std::fabs(mean.y) > std::fabs(points[1][i].y)) {
 
-                                mean.y = displacement.y;
+                                mean.y = points[1][i].y;
 
                             }
 

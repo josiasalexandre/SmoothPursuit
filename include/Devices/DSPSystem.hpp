@@ -55,17 +55,17 @@ class DSPSystem {
             input_buffer = subtract->get_buffer(0);
 
             // the delay device
-            DelayDevice *delay_1 = new DelayDevice(10);
-            //DelayDevice *delay_1 = new DelayDevice(72-25);
+            //DelayDevice *delay_1 = new DelayDevice(10);
+            DelayDevice *delay_1 = new DelayDevice(72-25);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
             // the linear gain
-            LinearGainDevice *linear_gain = new LinearGainDevice(6.3);
+            LinearGainDevice *linear_gain = new LinearGainDevice(7.1);
             // input_buffer = linear_gain->get_buffer();
 
             // the low pass filter
-            FIRDevice<41> *low_pass_1 = new FIRDevice<41>(1000, 15, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<61> *low_pass_1 = new FIRDevice<61>(1000, 5, LOW_PASS, HAMMING_WINDOW);
 
             // derivative
             FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(cv::Point2f(0.0, 0.0));
@@ -74,13 +74,13 @@ class DSPSystem {
             ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500, 0.00015, 3000);
 
             // the low pass
-            FIRDevice<41> *low_pass_2 = new FIRDevice<41>(1000, 25, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<61> *low_pass_2 = new FIRDevice<61>(1000, 8, LOW_PASS, HAMMING_WINDOW);
 
             // THIRD PATHWAY
-            SmoothGainDevice *smooth_gain = new SmoothGainDevice(25, 0.1, 0.16, 500, 18.5);
+            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28, 0.8, 0.1, 500, 4.0);
 
             // the low pass
-            FIRDevice<41> *low_pass_3 = new FIRDevice<41>(1000, 30, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<61> *low_pass_3 = new FIRDevice<61>(1000, 16, LOW_PASS, HAMMING_WINDOW);
 
             // summ all paths
             AddSignalsDevice<cv::Point2f, 3> *sum = new AddSignalsDevice<cv::Point2f, 3>(cv::Point2f(0.0, 0.0));
@@ -91,7 +91,7 @@ class DSPSystem {
 
             // Just a first order IIR filter
             // the plant low pass filter
-            FIRDevice<41> *plant = new FIRDevice<41>(1000, 40, LOW_PASS, HAMMING_WINDOW);
+            FIRDevice<61> *plant = new FIRDevice<61>(1000, 22, LOW_PASS, HAMMING_WINDOW);
             // LowPassExponentialDevice *plant = new LowPassExponentialDevice(0.001, 0.004);
 
             // the feedback gain
@@ -385,6 +385,7 @@ class DSPSystem {
             return input_buffer;
 
         }
+
 };
 
 #endif

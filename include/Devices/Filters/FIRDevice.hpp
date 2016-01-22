@@ -274,26 +274,7 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
 
         // the destructor
-        virtual ~FIRDevice() {
-
-            if (80 < TAPS && low_pass_output.is_open()) {
-
-                low_pass_output << " ]" << std::endl;
-
-                low_pass_output << "graphics_toolkit('gnuplot')" << std::endl;
-
-                low_pass_output << "plot(1:length(low_pass_resultx), low_pass_resultx)" << std::endl;
-
-                low_pass_output << "pause" << std::endl;
-
-                low_pass_output.close();
-                std::cout << std::endl << "karaca 1" << std::endl;
-
-            } else {
-                std::cout << std::endl << "karaca" << std::endl;
-            }
-
-        };
+        virtual ~FIRDevice() {}
 
         //
         virtual void run() {

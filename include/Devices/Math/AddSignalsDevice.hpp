@@ -58,7 +58,6 @@ class AddSignalsDevice : virtual public MultInputDevice<T, T, N> {
                 // unlock the output pointers
                 DeviceOutput<T>::output_mutex.unlock();
 
-
             }
 
         }

@@ -41,17 +41,22 @@ class ImageMotionModel {
         void mouse_click_callback(int, int, int, int);
         static void mouse_click(int, int, int, int, void*);
         void select_roi();
+        void find_roi(cv::Mat);
 
         // the interpolated signal
         std::vector<cv::Point2f> interpolated, output;
         cv::Point2f mean_z1, mean_z2, expected_mean, current_mean;
         bool interp;
+        cv::Point2f displacement, displacement_z1;
 
         // the DSP system
         DSPSystem system;
 
         // interpolation
         void linear_interpolation();
+
+        unsigned int wait_time;
+        float dt;
 
     public:
 

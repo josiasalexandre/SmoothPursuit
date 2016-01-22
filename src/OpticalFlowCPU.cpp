@@ -3,8 +3,7 @@
 // basic constructor
 OpticalFlowCPU::OpticalFlowCPU(OpticalFlow oft) : flow_type(oft),
     termcrit(cv::TermCriteria::COUNT | cv::TermCriteria::EPS,20,0.03),
-    subPixWinSize(10, 10), winSize(31,31), MAX_COUNT(500), needToInit(true),
-    displacement(0.0, 0.0) {}
+    subPixWinSize(10, 10), winSize(31,31), MAX_COUNT(500), needToInit(true) {}
 
 // computes the optical flow
 cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
@@ -46,86 +45,83 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
 
             }
 
-            std::cout << std::endl << "farnelback mean: " << mean << std::endl;
-
         } else if (OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU == flow_type) {
 
             if (needToInit) {
 
                 // automatic initialization
-                cv::goodFeaturesToTrack(old_gray, points[0], 1, 0.001, 10, cv::Mat(), 3, 0, 0.04);
+                cv::goodFeaturesToTrack(gray, points[1], MAX_COUNT, 0.01, 10, cv::Mat(), 3, 0, 0.04);
 
-                if (0 != points[0].size()) {
-                    cv::cornerSubPix(old_gray, points[0], subPixWinSize, cv::Size(-1,-1), termcrit);
+                if (0 != points[1].size()) {
+
+                    cv::cornerSubPix(gray, points[1], subPixWinSize, cv::Size(-1,-1), termcrit);
                     needToInit = false;
+
+                } else {
+                    needToInit = true;
                 }
-
-            }
-
-            if (0 == points[0].size()) {
-
-                needToInit == true;
 
             } else {
 
-                // compúting the optical flow
-                cv::calcOpticalFlowPyrLK(old_gray, gray, points[0], points[1], status, err, winSize, 3, termcrit, 0, 0.001);
+                if (0 == points[0].size()) {
 
-                if (0 == points[1].size()) {
-
-                    needToInit = true;
+                    needToInit == true;
 
                 } else {
 
-                    // get the frame copy
-                    frame.copyTo(image);
+                    // compúting the optical flow
+                    cv::calcOpticalFlowPyrLK(old_gray, gray, points[0], points[1], status, err, winSize, 3, termcrit, 0, 0.001);
 
-                    int k = 0;
+                    if (0 == points[1].size()) {
 
-                    displacement.x = 0;
-                    displacement.y = 0;
+                        needToInit = true;
 
-                    for( int i = 0; i < points[1].size(); i++ ) {
+                    } else {
 
-                        if( !status[i]) {
-                            std::cout << std::endl << "Deu ruim, continuando" << std::endl;
-                            continue;
+                        // get the frame copy
+
+                        frame.copyTo(image);
+
+
+                        int k = 0;
+
+                        for( int i = 0; i < points[1].size(); i++ ) {
+
+                            if( !status[i]) {
+                                continue;
+                            }
+
+                            mean += points[1][i] - points[0][i];
+
+                            points[1][k++] = points[1][i];
+
+                            // draw the circles
+                            cv::circle(image, points[1][i], 3, cv::Scalar(0,255,0), -1, 8);
+
                         }
 
+                        cv::imshow("draw", image);
 
-                        if (std::fabs(displacement.x) < std::fabs(points[1][i].x - points[0][i].x)) {
-
-                            displacement.x = points[1][i].x - points[0][i].x;
-                            // mean.x = displacement.x;
-
+                        // computes the mean
+                        if (k != 0) {
+                            mean /= k;
+                        } else {
+                            mean.x = 0.0;
+                            mean.y = 0.0;
                         }
 
-                        if (std::fabs(displacement.y) < std::fabs(points[1][i].y - points[0][i].y)) {
-
-                            displacement.y = points[1][i].y - points[0][i].y;
-                            // mean.y = displacement.y;
-
+                        if (0.05 > std::fabs(mean.x)) {
+                            mean.x = 0.0;
                         }
 
-                        mean += points[1][i] - points[0][i];
-                        //mean += points[1][i];
+                        if (0.05 > std::fabs(mean.y)) {
+                            mean.y = 0.0;
+                        }
 
-                        points[1][k++] = points[1][i];
-
-                        // draw the circles
-                        cv::circle(image, points[1][i], 3, cv::Scalar(0,255,0), -1, 8);
+                        // resize the points
+                        points[1].resize(k);
 
                     }
-
-                    // computes the mean
-                    mean /= k;
-                    //mean = displacement;
-
-                    // for drawing purpose
-                    cv::imshow("tracking", image);
-
-                    // resize the points
-                    points[1].resize(k);
 
                 }
 
@@ -138,11 +134,10 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
                 needToInit = true;
             }
 
-            //std::cout << std::endl << "lkpyr mean: " << mean << std::endl;
-
         }
 
     }
+
 
     // swap the gray images
     std::swap(old_gray, gray);

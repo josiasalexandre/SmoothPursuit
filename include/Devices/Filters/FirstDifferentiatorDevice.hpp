@@ -34,7 +34,6 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
 
         }
 
-
         // the main method
         virtual void run() {
 

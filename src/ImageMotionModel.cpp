@@ -5,6 +5,8 @@
 ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     video(filename),
     fps(frame_rate),
+    wait_time(1000/frame_rate),
+    dt(0.001),
     fs(1000),
     fovea(300.0, 200.0, 100, 100),
     system(),
@@ -12,6 +14,8 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     current_mean(0.0, 0.0),
     mean_z1(0.0, 0.0),
     mean_z2(0.0, 0.0),
+    displacement(0.0, 0.0),
+    displacement_z1(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
     stupid(150),
@@ -41,12 +45,16 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     video(0),
     fps(frame_rate),
     fs(1000),
+    wait_time(1000/frame_rate),
+    dt(0.001),
     fovea(300.0, 200.0, 100, 100),
     system(),
     interpolated(0),
     current_mean(0.0, 0.0),
     mean_z1(0.0, 0.0),
     mean_z2(0.0, 0.0),
+    displacement(0.0, 0.0),
+    displacement_z1(0.0, 0.0),
     interp(false),
     translation(0.0, 0.0),
     stupid(150),
@@ -93,6 +101,47 @@ void ImageMotionModel::mouse_click(int event, int x, int y, int flags, void* par
 
 }
 
+void ImageMotionModel::find_roi(cv::Mat temp_window) {
+
+    cv::Point2i center(0.0, 0.0);
+
+    cv::Vec3b *pixel;
+
+    int k = 1;
+    unsigned int red, green, blue;
+
+    if (!temp_window.empty()) {
+
+        for (int i = 0; i < temp_window.rows; i++) {
+
+            for (int j = 0; j < temp_window.cols; j++) {
+
+                blue = temp_window.at<cv::Vec3b>(i, j).val[0];
+                green = temp_window.at<cv::Vec3b>(i, j).val[1];
+                red = temp_window.at<cv::Vec3b>(i, j).val[2];
+
+                if (150 > green && 150 < red && 150 < blue) {
+
+                    center.x += j;
+                    center.y += i;
+                    k++;
+
+                }
+
+            }
+
+        }
+
+        center /= k;
+
+        fovea.x -= (fovea.width*0.5 - center.x);
+        fovea.y -= (fovea.height*0.5 - center.y);
+
+    }
+
+}
+
+
 // get the REGION OF INTEREST
 void ImageMotionModel::select_roi() {
 
@@ -112,7 +161,7 @@ void ImageMotionModel::select_roi() {
 
         cv::imshow("select", temp_window);
 
-        keyboard = cv::waitKey(fps);
+        keyboard = cv::waitKey(wait_time);
 
         if (43 == keyboard) {
 
@@ -123,6 +172,10 @@ void ImageMotionModel::select_roi() {
 
             fovea.width -= 1;
             fovea.height -= 1;
+
+        } else if ('f' == (char) keyboard) {
+
+            find_roi(frame(fovea).clone());
 
         }
 
@@ -145,6 +198,7 @@ void ImageMotionModel::run() {
 
     std::ofstream error_file, signal_file;
 
+
     error_file.open("error.mat");
     if (!error_file.is_open()) {
         std::cout << std::endl << "Could not open the file error.mat" << std::endl;
@@ -159,7 +213,9 @@ void ImageMotionModel::run() {
     std::vector<cv::Point2f> input_signal(0);
     std::vector<cv::Point2f> output_signal(0);
 
-    error_file << "error = [";
+    float dispx;
+
+    int counter_x = 0, counter_y = 0;
 
     while(!frame.empty() && 'q' != keyboard) {
 
@@ -167,48 +223,74 @@ void ImageMotionModel::run() {
 
         // optical flow
         // displacement?
-        current_mean = stupid.displacement(cv::Point2i(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
-        //current_mean = optical_flow.run(frame(fovea).clone());
-        current_mean.y = 0;
+        displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), frame(fovea).clone());
 
-        if (current_mean != current_mean) {
+        current_mean = optical_flow.run(frame(fovea).clone());
+
+        // verify th NaN and inf cases
+        if (current_mean != current_mean || std::isinf(current_mean.x) || std::isinf(current_mean.y)) {
             current_mean = mean_z1;
             std::cout << std::endl << NAN << std::endl;
         }
 
-        //save the input signal
-        input_signal.push_back(current_mean);
+        if (0 > displacement.x*current_mean.x) {
 
-        if (0.15 > std::fabs(current_mean.x)) {
-
-            current_mean.x = 0.0;
-
-        } /* else if (0 > current_mean.x*mean_z1.x) {
-
-
-            //current_mean.x = -current_mean.x*;
-            current_mean.x *= 0.1;
+            current_mean.x = -current_mean.x;
 
         }
-        */
 
-        /*
-        if (0.15 > std::fabs(current_mean.y)) {
+        if (0 > displacement.y*current_mean.y) {
 
-            current_mean.y = 0.0;
-
-        } else if (0 > current_mean.y*mean_z1.y) {
-
-            current_mean.y *= 0.1;
-            //current_mean.y = -current_mean.y;
+            current_mean.y = -current_mean.y;
 
         }
-        */
 
+
+        if (0.1 > ((float) std::abs(displacement.x))/((float) fovea.width*0.4)) {
+
+            current_mean.x = 0;
+
+        }
+
+        if (0.1 > ((float) std::abs(displacement.y))/((float) fovea.width*0.4)) {
+
+            current_mean.y = 0;
+
+        }
+
+        // saccade
+        if (fovea.width*0.4 < std::fabs(displacement.x) || fovea.height*0.4 < std::fabs(displacement.y)) {
+
+
+            fovea.x += displacement.x;
+            fovea.y += displacement.y;
+
+            current_mean.x = 0;
+            current_mean.y = 0;
+
+            // interpolate
+            linear_interpolation();
+
+            // output
+            output.clear();
+
+            // process the interpolated signal, jut to clear the system
+            output = system.run(interpolated);
+            output = system.run(interpolated);
+
+            translation.x = 0;
+            translation.y = 0;
+
+            continue;
+
+        }
 
         // considering displacement
-        current_mean.x = current_mean.x/0.04;
-        current_mean.y = current_mean.y/0.04;
+        current_mean.x = current_mean.x*fps;
+        current_mean.y = current_mean.y*fps;
+
+        //save the input signal
+        input_signal.push_back(current_mean);
 
         if (!interp) {
 
@@ -232,12 +314,12 @@ void ImageMotionModel::run() {
             std::vector<cv::Point2f> signal;
 
             for (int i = 0; i < 50; i++) {
-                signal.push_back(cv::Point2f(time*i, 15*std::sin(i*0.001*2*M_PI)));
+                signal.push_back(cv::Point2f(time*i, 15*std::sin(i*dt*2*M_PI)));
 
             }
 
             for (int i = 50; i < 6000; i++) {
-                signal.push_back(cv::Point2f(15.0, 15*std::sin(i*0.001*2*M_PI)));
+                signal.push_back(cv::Point2f(15.0, 15*std::sin(i*dt*2*M_PI)));
             }
 
             std::vector<cv::Point2f> result = system.run(signal);
@@ -293,9 +375,6 @@ void ImageMotionModel::run() {
         // interpolate
         linear_interpolation();
 
-        // update the old mean value
-        mean_z1 = current_mean;
-
         // clear the output
         output.clear();
 
@@ -311,7 +390,8 @@ void ImageMotionModel::run() {
         // move the fovea
         for (int i = 0; i < output_size; i++) {
 
-            translation += output[i]*0.001;
+            translation.x += (output[i].x)*(dt);
+            translation.y += (output[i].y)*(dt);
 
         }
 
@@ -324,22 +404,20 @@ void ImageMotionModel::run() {
 
         }
 
-        if (1 < translation.x || -1 > translation.x) {
+        if ((1 < translation.x || -1 > translation.x)) {
 
-            int x = (int) std::floor(translation.x + 0.5);
+            fovea.x += (int) std::floor(translation.x + 0.5);
 
-            fovea.x += x;
-
+            int x = (int) translation.x;
             translation.x -= x;
 
         }
 
-        if (1 < translation.y || -1 > translation.y) {
+        if ((1 < translation.y || -1 > translation.y)) {
 
-            int y = (int) std::floor(translation.y + 0.5);
+            fovea.y += (int) std::floor(translation.y + 0.5);
 
-            fovea.y += y;
-
+            int y = (int) translation.y;
             translation.y -= y;
 
         }
@@ -388,7 +466,7 @@ void ImageMotionModel::run() {
         cv::imshow("frame", frame);
         cv::imshow("fovea", cropped_image);
 
-        keyboard = cv::waitKey(fps);
+        keyboard = cv::waitKey(wait_time);
 
         // get the next frame
         video >> frame;
