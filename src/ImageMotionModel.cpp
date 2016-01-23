@@ -214,6 +214,10 @@ void ImageMotionModel::run() {
     // the fovea's center
     cv::Point2i center(fovea.width*0.5, fovea.height*0.5);
 
+    // the fovea threshold
+    float f_x_dist  = fovea.width*0.05;
+    float f_y_dist  = fovea.height*0.05;
+
     // the main loop
     while(!frame.empty() && 'q' != keyboard) {
 
@@ -234,7 +238,7 @@ void ImageMotionModel::run() {
 
         // is the object escaping from the fovea's center? (x direction) and
         // the displacement and the optical flow has the same direction?
-        if (fovea.width*0.05 < std::fabs(displacement.x) && 0 < displacement.x*current_flow.x) {
+        if (f_x_dist < std::fabs(displacement.x) && 0 < displacement.x*current_flow.x) {
 
             current_flow.x *= 1.75;
 
@@ -242,7 +246,7 @@ void ImageMotionModel::run() {
 
         // is the object escaping from the fovea's center? (y direction)
         // the displacement and the optical flow has the same direction?
-        if (fovea.height*0.05 < std::fabs(displacement.y) && 0 < displacement.y*current_flow.y) {
+        if (f_y_dist < std::fabs(displacement.y) && 0 < displacement.y*current_flow.y) {
 
             current_flow.y *= 1.75;
 
