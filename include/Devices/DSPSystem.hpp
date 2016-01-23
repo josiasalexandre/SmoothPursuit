@@ -69,7 +69,7 @@ class DSPSystem {
 
             // FIRST PATHWAY
             // the linear gain
-            LinearGainDevice *linear_gain = new LinearGainDevice(5.2);
+            LinearGainDevice *linear_gain = new LinearGainDevice(5.7);
 
             // the low pass filter
             FIRDevice<61> *low_pass_1 = new FIRDevice<61>(1000, 5, LOW_PASS, HAMMING_WINDOW);

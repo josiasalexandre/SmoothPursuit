@@ -17,8 +17,8 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     testing(false),
     translation(0.0, 0.0),
     stupid(150),
-    //optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
-    optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
+    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     // verify video capture object
@@ -52,8 +52,8 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     testing(false),
     translation(0.0, 0.0),
     stupid(150),
-    //optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
-    optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
+    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     // verify video capture object
@@ -228,6 +228,31 @@ void ImageMotionModel::run() {
             std::cout << std::endl << NAN << std::endl;
         }
 
+        // is the object escaping from the fovea's center? (x direction) and
+        // the displacement and the optical flow has the same direction?
+        if (fovea.width*0.1 < std::fabs(displacement.x)) {
+
+            if (0 < displacement.x*current_flow.x) {
+
+                current_flow.x *= 1.75;
+
+            }
+
+        }
+
+
+        // is the object escaping from the fovea's center? (y direction)
+        // the displacement and the optical flow has the same direction?
+        if (fovea.height*0.1 < std::fabs(displacement.y)) {
+
+            if (0 < displacement.y*current_flow.y) {
+
+                current_flow.y *= 1.75;
+
+            }
+
+        }
+
         // save the current flow to the input signal vector
         input_signal.push_back(current_flow);
 
@@ -308,8 +333,7 @@ void ImageMotionModel::run() {
         }
 
         // saccade
-        if (fovea.width*0.4 < std::fabs(displacement.x) || fovea.height*0.4 < std::fabs(displacement.y)) {
-
+        if (fovea.width*0.45 < std::fabs(displacement.x) || fovea.height*0.45 < std::fabs(displacement.y)) {
 
             fovea.x += displacement.x;
             fovea.y += displacement.y;
@@ -428,29 +452,29 @@ void ImageMotionModel::run() {
 
         }
 
-        // crop
-        cv::Mat cropped_image = frame(fovea).clone();
-
         cv::Point l1, l2, l3, l4;
 
-        l1.x = fovea.x + 40;
-        l1.y = fovea.y + 50;
+        int center_x = fovea.width*0.5;
+        int center_y = fovea.height*0.5;
 
-        l2.x = fovea.x + 60;
-        l2.y = fovea.y + 50;
+        l1.x = fovea.x + center_x - 10;
+        l1.y = fovea.y + center_y;
 
-        l3.x = fovea.x + 50;
-        l3.y = fovea.y + 40;
+        l2.x = fovea.x + center_x + 10;
+        l2.y = fovea.y + center_y;
 
-        l4.x = fovea.x + 50;
-        l4.y = fovea.y + 60;
+        l3.x = fovea.x + center_x;
+        l3.y = fovea.y + center_y - 10;
+
+        l4.x = fovea.x + center_x;
+        l4.y = fovea.y + center_y + 10;
 
         cv::line(frame, l1, l2, cv::Scalar(0,255,0));
         cv::line(frame, l3, l4, cv::Scalar(0,255,0));
 
         // show the image
         cv::imshow("frame", frame);
-        cv::imshow("fovea", cropped_image);
+        cv::imshow("fovea", cropped_frame);
 
         keyboard = cv::waitKey(wait_time);
 
