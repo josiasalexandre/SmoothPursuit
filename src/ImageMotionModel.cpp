@@ -211,13 +211,17 @@ void ImageMotionModel::run() {
     // image inside the fovea
     cv::Mat cropped_frame;
 
+    // the fovea's center
+    cv::Point2i center(fovea.width*0.5, fovea.height*0.5);
+
+
     while(!frame.empty() && 'q' != keyboard) {
 
         // fovea position
         cropped_frame = frame(fovea).clone();
 
         // computes the displacement
-        displacement = stupid.displacement(cv::Point2f(fovea.width*0.5, fovea.height*0.5), cropped_frame);
+        displacement = stupid.displacement(center, cropped_frame);
 
         // optical flow
         current_flow = optical_flow.run(cropped_frame);
@@ -333,7 +337,7 @@ void ImageMotionModel::run() {
         }
 
         // saccade
-        if (fovea.width*0.45 < std::fabs(displacement.x) || fovea.height*0.45 < std::fabs(displacement.y)) {
+        if (fovea.width*0.4 < std::fabs(displacement.x) || fovea.height*0.4 < std::fabs(displacement.y)) {
 
             fovea.x += displacement.x;
             fovea.y += displacement.y;
@@ -454,20 +458,17 @@ void ImageMotionModel::run() {
 
         cv::Point l1, l2, l3, l4;
 
-        int center_x = fovea.width*0.5;
-        int center_y = fovea.height*0.5;
+        l1.x = fovea.x + center.x - 10;
+        l1.y = fovea.y + center.y;
 
-        l1.x = fovea.x + center_x - 10;
-        l1.y = fovea.y + center_y;
+        l2.x = fovea.x + center.x + 10;
+        l2.y = fovea.y + center.y;
 
-        l2.x = fovea.x + center_x + 10;
-        l2.y = fovea.y + center_y;
+        l3.x = fovea.x + center.x;
+        l3.y = fovea.y + center.y - 10;
 
-        l3.x = fovea.x + center_x;
-        l3.y = fovea.y + center_y - 10;
-
-        l4.x = fovea.x + center_x;
-        l4.y = fovea.y + center_y + 10;
+        l4.x = fovea.x + center.x;
+        l4.y = fovea.y + center.y + 10;
 
         cv::line(frame, l1, l2, cv::Scalar(0,255,0));
         cv::line(frame, l3, l4, cv::Scalar(0,255,0));
