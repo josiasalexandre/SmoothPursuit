@@ -64,7 +64,7 @@ class DSPSystem {
 
             // the delay device
             //DelayDevice *delay_1 = new DelayDevice(10);
-            DelayDevice *delay_1 = new DelayDevice(72 - 25 - 1);
+            DelayDevice *delay_1 = new DelayDevice(72 - 1);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
