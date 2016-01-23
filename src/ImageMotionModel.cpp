@@ -240,7 +240,6 @@ void ImageMotionModel::run() {
 
         }
 
-
         // is the object escaping from the fovea's center? (y direction)
         // the displacement and the optical flow has the same direction?
         if (fovea.height*0.1 < std::fabs(displacement.y) && 0 > displacement.y*current_flow.y) {
@@ -401,16 +400,13 @@ void ImageMotionModel::run() {
 
         }
 
-        if (current_flow.x != 0 || current_flow.y != 0) {
+        // computes the error
+        error = current_flow - translation;
 
-            // computes the error
-            error = current_flow - translation;
+        // save the error to the plot file
+        error_file << " " << error;
 
-            error_file << " " << error;
-
-        }
-
-        if ((1 < translation.x || -1 > translation.x)) {
+        if (1 < std::abs(translation.x)) {
 
             fovea.x += (int) std::floor(translation.x + 0.5);
 
@@ -419,7 +415,7 @@ void ImageMotionModel::run() {
 
         }
 
-        if ((1 < translation.y || -1 > translation.y)) {
+        if (1 < std::abs(translation.y)) {
 
             fovea.y += (int) std::floor(translation.y + 0.5);
 
