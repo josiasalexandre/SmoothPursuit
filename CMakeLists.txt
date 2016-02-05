@@ -3,7 +3,6 @@ project(dsp)
 cmake_minimum_required(VERSION 2.6)
 
 find_package(OpenCV REQUIRED)
-find_package(Qt4 REQUIRED)
 
 add_executable(dsp main.cpp)
 
@@ -34,10 +33,6 @@ set(DSP_LIB_TEST_SOURCES
 ## Declare a C++ library
 add_library(dsp_libs ${DSP_LIB_SOURCES})
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-
-target_link_libraries(dsp ${OpenCV_LIBS})
-target_link_libraries(dsp ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
 target_link_libraries(dsp ${OpenCV_LIBS})
 target_link_libraries(dsp dsp_libs)
 

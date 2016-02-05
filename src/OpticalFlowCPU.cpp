@@ -63,6 +63,7 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat frame) {
                             mean.y += row[j].y*gaussian.at<float>(i, j);
 
                         }
+
                     }
 
                 }

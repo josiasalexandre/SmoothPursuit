@@ -102,7 +102,7 @@ class DSPSystem {
             // LowPassExponentialDevice *plant = new LowPassExponentialDevice(0.001, 0.004);
 
             // the feedback gain
-            LinearGainDevice *feedback_gain = new LinearGainDevice(1);
+            // LinearGainDevice *feedback_gain = new LinearGainDevice(1);
 
             // the system output
             SystemOutputDevice<cv::Point2f> *system_output = new SystemOutputDevice<cv::Point2f>(&output);
@@ -154,7 +154,7 @@ class DSPSystem {
             plant->add_signal_source(integrator);
 
             // control the feedback gain
-            feedback_gain->add_signal_source(plant);
+            // feedback_gain->add_signal_source(plant);
 
             // the feedback connection FOVEA
             //subtract->add_signal_source(feedback_gain, 1);
@@ -177,7 +177,7 @@ class DSPSystem {
             on_devices.push_back(sum);
             on_devices.push_back(integrator);
             on_devices.push_back(plant);
-            on_devices.push_back(feedback_gain);
+            // on_devices.push_back(feedback_gain);
             output_devices.push_back(system_output);
 
         }
