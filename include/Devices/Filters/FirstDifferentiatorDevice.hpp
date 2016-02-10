@@ -34,6 +34,21 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
 
         }
 
+        // device reset
+        virtual void reset() {
+
+            // set the output to zero
+            output.x = 0.0;
+            output.y = 0.0;
+
+            // set the old value to zero
+            old_value.x = 0.0;
+            old_value.y = 0.0;
+
+            // clear the entire input buffer
+            buffer->clear();
+
+        }
         // the main method
         virtual void run() {
 

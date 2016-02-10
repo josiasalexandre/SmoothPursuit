@@ -33,6 +33,22 @@ class TrapzIntegratorDevice : virtual public SingleInputDevice<cv::Point2f, cv::
 
         }
 
+        // device reset
+        virtual void reset() {
+
+            // set the output to zero
+            output.x = 0.0;
+            output.y = 0.0;
+
+            // set the output to zero
+            old_value.x = 0.0;
+            old_value.y = 0.0;
+
+            // clear the entire input buffer
+            buffer->clear();
+
+        }
+
         // the main method
         virtual void run() {
 

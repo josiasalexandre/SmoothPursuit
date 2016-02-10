@@ -64,12 +64,12 @@ class DSPSystem {
 
             // the delay device
             //DelayDevice *delay_1 = new DelayDevice(10);
-            DelayDevice *delay_1 = new DelayDevice(72 - 1);
+            DelayDevice *delay_1 = new DelayDevice(72 - 25 - 1);
             // DelayDevice *delay_2 = new DelayDevice(77);
 
             // FIRST PATHWAY
             // the linear gain
-            LinearGainDevice *linear_gain = new LinearGainDevice(5.7);
+            LinearGainDevice *linear_gain = new LinearGainDevice(6.7);
 
             // the low pass filter
             FIRDevice<61> *low_pass_1 = new FIRDevice<61>(1000, 5, LOW_PASS, HAMMING_WINDOW);
@@ -194,6 +194,62 @@ class DSPSystem {
 
         // the basic destructor
         ~DSPSystem () {
+
+        }
+
+
+        // reset the entire system
+        void reset() {
+
+            BaseDevice *dev;
+
+            // run all the outputs
+            while(output_devices.iterator()) {
+
+                dev = output_devices.current_element();
+
+                if (nullptr != dev) {
+                    dev->reset();
+                }
+
+            }
+
+            // run all the iddle_devices
+            while(iddle_devices.iterator()) {
+
+                dev = iddle_devices.current_element();
+
+                if (nullptr != dev) {
+                    dev->reset();
+                }
+
+            }
+
+            // run all the on_devices
+            while(on_devices.iterator()) {
+
+                dev = on_devices.current_element();
+
+                if (nullptr != dev) {
+                    dev->reset();
+                }
+
+            }
+
+            // run all the input_devices
+            while(input_devices.iterator()) {
+
+                dev = input_devices.current_element();
+
+                if (nullptr != dev) {
+
+                    dev->reset();
+
+                }
+
+
+            }
+
 
         }
 

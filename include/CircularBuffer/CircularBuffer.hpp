@@ -269,6 +269,13 @@ class CircularBuffer {
 
         }
 
+        // clear the entire buffer
+        void clear() {
+
+            tail = head;
+
+        }
+
 };
 
 #endif

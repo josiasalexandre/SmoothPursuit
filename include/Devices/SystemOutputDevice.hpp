@@ -80,6 +80,17 @@ class SystemOutputDevice : virtual public DeviceInput<T> {
 
         }
 
+        // device reset
+        virtual void reset() {
+
+            // set the output to zero
+            output->clear();
+
+            // clear the entire input buffer
+            input.first.clear();
+
+        }
+
         // the main device method
         virtual void run() {
 

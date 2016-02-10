@@ -29,7 +29,7 @@ class ImageMotionModel {
         cv::Rect fovea;
 
         // the fovea translation
-        cv::Point2f translation;
+        cv::Point2f translation, old_translation;
 
         // the optical flow object
         OpticalFlowCPU optical_flow;

@@ -19,8 +19,8 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
         // the tau param
         float tau;
 
-        // the last value and the filtered one
-        cv::Point2f old_sample, filtered;
+        // the last value and the output one
+        cv::Point2f old_value, output;
 
         // a pointer to the base class buffer =( | * need to avoid protected? |
         CircularBuffer<cv::Point2f> *buffer;
@@ -30,7 +30,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
         // basic constructor
         LowPassExponentialDevice() :
             SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            T(0.001), tau(0.015), old_sample(0.0, 0.0), buffer(nullptr)
+            T(0.001), tau(0.015), old_value(0.0, 0.0), buffer(nullptr)
         {
 
 
@@ -50,7 +50,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
         // basic constructor
         LowPassExponentialDevice(float sampling_rate, float time) :
             SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            T(sampling_rate), tau(time), old_sample(0.0, 0.0), buffer(nullptr)
+            T(sampling_rate), tau(time), old_value(0.0, 0.0), buffer(nullptr)
         {
 
             // get the buffer
@@ -71,7 +71,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
             T(0.001),
             tau(0.015),
-            old_sample(0.0, 0.0),
+            old_value(0.0, 0.0),
             buffer(nullptr)
         {
 
@@ -93,7 +93,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             SingleInputDevice< cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
             T(sampling_rate),
             tau(time),
-            old_sample(0.0, 0.0),
+            old_value(0.0, 0.0),
             buffer(nullptr)
         {
 
@@ -110,20 +110,36 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
 
         }
 
+        // device reset
+        virtual void reset() {
+
+            // set the output to zero
+            output.x = 0.0;
+            output.y = 0.0;
+
+            // set the old_value to zero
+            old_value.x = 0.0;
+            old_value.y = 0.0;
+
+            // clear the entire input buffer
+            buffer->clear();
+
+        }
+
         // @override the run method
         virtual void run() {
 
             // get the value
-            filtered = buffer->pop();
+            output = buffer->pop();
 
             // filtering
-            filtered = alpha*old_sample + alpha_1*filtered;
+            output = alpha*old_value + alpha_1*output;
 
-            // save the actual filtered value
-            old_sample = filtered;
+            // save the actual output value
+            old_value = output;
 
             // send to all external connected devices
-            DeviceOutput<cv::Point2f>::send(filtered);
+            DeviceOutput<cv::Point2f>::send(output);
 
         }
 

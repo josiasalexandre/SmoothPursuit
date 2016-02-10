@@ -16,6 +16,7 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
     displacement(0.0, 0.0),
     testing(false),
     translation(0.0, 0.0),
+    old_translation(0.0, 0.0),
     stupid(150),
     optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
     //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
@@ -51,9 +52,10 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
     displacement(0.0, 0.0),
     testing(false),
     translation(0.0, 0.0),
+    old_translation(0.0, 0.0),
     stupid(150),
-    optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
-    //optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
+    //optical_flow(OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU)
+    optical_flow(OPTICAL_FLOW_FARNEBACK_CPU)
 {
 
     // verify video capture object
@@ -226,13 +228,19 @@ void ImageMotionModel::run() {
     while(!frame.empty() && 'q' != keyboard) {
 
         // fovea position
-        cropped_frame = frame(fovea).clone();
+        cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
         // computes the displacement
         displacement = stupid.displacement(center, cropped_frame);
+        // displacement = stupid.stupid_displacement(center, frame(fovea).clone());
 
         // optical flow
-        current_flow = optical_flow.run(cropped_frame);
+        // current_flow = optical_flow.run(cropped_frame);
+        // current_flow = optical_flow.run_farneback(cropped_frame, old_translation);
+        // current_flow = optical_flow.run_farneback(cropped_frame);
+        // current_flow = optical_flow.run_lkpyr(cropped_frame);
+        // current_flow = optical_flow.run_lkpyr(cropped_frame, old_translation);
+        current_flow = optical_flow.run_lkpyr2(cropped_frame, old_translation);
 
         // verify th NaN and inf cases
         if (current_flow != current_flow || std::isinf(current_flow.x) || std::isinf(current_flow.y)) {
@@ -338,6 +346,8 @@ void ImageMotionModel::run() {
         // saccade
         if (f_x_max_dist < std::fabs(displacement.x) || f_y_max_dist < std::fabs(displacement.y)) {
 
+            std::cout << std::endl << "Sacade" << current_flow << std::endl;
+
             fovea.x += displacement.x;
             fovea.y += displacement.y;
 
@@ -361,21 +371,32 @@ void ImageMotionModel::run() {
 
             }
 
-            current_flow.x = 0;
-            current_flow.y = 0;
+            // reset the system
+            system.reset();
 
-            // interpolate
+            // interpolate the signal between frames
             linear_interpolation();
 
-            // output
-            output.clear();
-
-            // process the interpolated signal, jut to clear the entire system
-            output = system.run(interpolated);
+            // just to insert somo direction to the dsp system
             output = system.run(interpolated);
 
             translation.x = 0;
             translation.y = 0;
+
+            old_translation = translation;
+
+            // show the image
+            cv::imshow("frame", frame);
+
+            keyboard = cv::waitKey(wait_time);
+
+            // get the next frame
+            video >> frame;
+
+            cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
+
+            // reset the optical flow
+            optical_flow.init(cropped_frame);
 
             continue;
 
@@ -403,10 +424,14 @@ void ImageMotionModel::run() {
         // move the fovea
         for (int i = 0; i < output_size; i++) {
 
-            translation.x += (output[i].x)*(dt);
-            translation.y += (output[i].y)*(dt);
+            translation.x += (output[i].x)*dt;
+            translation.y += (output[i].y)*dt;
 
         }
+
+        // save the translation info
+        old_translation.x = (int) translation.x;
+        old_translation.y = (int) translation.y;
 
         // computes the error
         error = current_flow - translation;
@@ -416,7 +441,7 @@ void ImageMotionModel::run() {
 
         if (1 < std::abs(translation.x)) {
 
-            fovea.x += (int) (translation.x);
+            fovea.x += (int) translation.x;
 
             translation.x -= (int) translation.x;
 
@@ -424,7 +449,7 @@ void ImageMotionModel::run() {
 
         if (1 < std::abs(translation.y)) {
 
-            fovea.y += (int) (translation.y);
+            fovea.y += (int) translation.y;
 
             translation.y -= (int) translation.y;
 
@@ -464,12 +489,15 @@ void ImageMotionModel::run() {
         l4.x = fovea.x + center.x;
         l4.y = fovea.y + center.y + 10;
 
+        // draw the lines
         cv::line(frame, l1, l2, cv::Scalar(0,255,0));
         cv::line(frame, l3, l4, cv::Scalar(0,255,0));
 
+        // draw the fovea rectangle
+        cv::rectangle(frame, fovea, cv::Scalar(0, 255, 0));
+
         // show the image
         cv::imshow("frame", frame);
-        cv::imshow("fovea", cropped_frame);
 
         keyboard = cv::waitKey(wait_time);
 

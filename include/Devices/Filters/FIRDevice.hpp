@@ -276,7 +276,23 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
         // the destructor
         virtual ~FIRDevice() {}
 
-        //
+        // device reset
+        // device reset
+        virtual void reset() {
+
+            // set the output to zero
+            output.x = 0.0;
+            output.y = 0.0;
+
+            // clear the entire input buffer
+            buffer->clear();
+
+            // clear the entire special buffer
+            clear_special_buffer();
+
+        }
+
+        // the main method
         virtual void run() {
 
             // save the new sample

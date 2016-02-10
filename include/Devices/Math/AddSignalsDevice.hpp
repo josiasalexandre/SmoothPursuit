@@ -8,8 +8,6 @@
 template<typename T, unsigned int N>
 class AddSignalsDevice : virtual public MultInputDevice<T, T, N> {
 
-    private:
-
     public:
 
         AddSignalsDevice(T v_null) : MultInputDevice<T, T, N>::MultInputDevice(v_null) {
@@ -17,6 +15,19 @@ class AddSignalsDevice : virtual public MultInputDevice<T, T, N> {
             if (1 > N) {
 
                 throw std::invalid_argument("usage: AddSignalsDevice<T, N>(T v_null) -> N must be greater than zero");
+
+            }
+
+        }
+
+        // device reset
+        virtual void reset() {
+
+            // clear the entire input buffer
+            for (int i = 0; i < N; i++) {
+
+                // clear the entire buffer
+                MultInputDevice<T, T, N>::inputs[i].first.clear();
 
             }
 

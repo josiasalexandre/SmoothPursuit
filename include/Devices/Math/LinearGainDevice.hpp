@@ -12,7 +12,6 @@ class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
         // alpha multiplier
         float alpha;
 
-
         // the output value
         cv::Point2f output;
 
@@ -29,6 +28,18 @@ class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
             // get the buffer address
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
+
+        }
+
+        // the reset
+        virtual void reset() {
+
+            // set the output to zero
+            output.x = 0.0;
+            output.x = 0.0;
+
+            // clear the buffer
+            buffer->clear();
 
         }
 

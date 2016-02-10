@@ -37,6 +37,9 @@ class BaseDevice {
 
         }
 
+        // device reset
+        virtual void reset() = 0;
+
         // the main device method
         virtual void run() = 0;
 
