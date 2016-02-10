@@ -667,7 +667,6 @@ cv::Point2f OpticalFlowCPU::run_lkpyr2(cv::Mat new_gray, cv::Point2f movement) {
 
                         int points_size = points[1].size();
 
-                        cv::Mat colored;
                         cv::cvtColor(new_gray, colored, cv::COLOR_GRAY2BGR);
 
                         for (int i = 0; i < points_size; i++) {
@@ -693,8 +692,10 @@ cv::Point2f OpticalFlowCPU::run_lkpyr2(cv::Mat new_gray, cv::Point2f movement) {
 
                             }
 
+                            // remove invalid points
                             points[1][k++] = points[1][i];
 
+                            // draw a circle at the points location
                             cv::circle(colored, points[1][i], 5, cv::Scalar(0, 255, 0), 1);
 
                         }
@@ -704,6 +705,7 @@ cv::Point2f OpticalFlowCPU::run_lkpyr2(cv::Mat new_gray, cv::Point2f movement) {
                             mean /= count;
                         }
 
+                        // show the circles
                         cv::imshow("points", colored);
 
                         // resize the points[1] vector

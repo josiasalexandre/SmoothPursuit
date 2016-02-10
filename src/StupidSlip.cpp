@@ -27,8 +27,6 @@ StupidSlip::StupidSlip(unsigned int value) : threshold(value) {
 
 cv::Point2f StupidSlip::displacement(cv::Point2i center, cv::Mat gray) {
 
-    // convert the frame to gray
-
     // detect the keypoints at the fovea
     detector->detect(gray, keypoints_scene);
 
@@ -59,8 +57,11 @@ cv::Point2f StupidSlip::displacement(cv::Point2i center, cv::Mat gray) {
         position.y = (position.y/matches.size()) - center.y;
 
         // draw the matches
-        if (0 < keypoints_scene.size())
+        if (0 < keypoints_scene.size()) {
+
             cv::drawMatches(img_object, keypoints_object, gray, keypoints_scene, matches, img_matches);
+
+        }
 
     }
 

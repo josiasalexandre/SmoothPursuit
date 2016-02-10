@@ -76,6 +76,9 @@ class OpticalFlowCPU {
         // the background threshold
         float bg_threshold, mo_threshold;
 
+        // just to draw the circles
+        cv::Mat colored;
+
         // private methods
         void get_points(cv::Mat);
         void mouse_click_callback(int, int, int, int);
@@ -96,7 +99,7 @@ class OpticalFlowCPU {
         cv::Point2f run_lkpyr(cv::Mat, cv::Point2f);
 
         // computes the optical flow - LKPyr
-        cv::Point2f run_lkpyr2(cv::Mat new_gray, cv::Point2f movement); 
+        cv::Point2f run_lkpyr2(cv::Mat new_gray, cv::Point2f movement);
 
         // computes the optical flow - Farneback
         cv::Point2f run_farneback(cv::Mat);
