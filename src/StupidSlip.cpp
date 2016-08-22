@@ -2,29 +2,7 @@
 #include <iostream>
 
 // basic constructor
-StupidSlip::StupidSlip(unsigned int value) : threshold(value), bounding() {
-
-     //load the image
-    img_object = cv::imread("../Examples/Lemming/Lemming_reference.png", CV_LOAD_IMAGE_GRAYSCALE);
-
-    // verify image
-    if (img_object.empty()) {
-        throw std::invalid_argument("Could not open the reference image!");
-    }
-
-    // build the detector and extractor
-    detector = cv::xfeatures2d::SurfFeatureDetector::create(600);
-    extractor = cv::xfeatures2d::SURF::create();
-
-    // detect keypoints at the reference image
-    //orb->detect(img_object, keypoints_object);
-    detector->detect(img_object, keypoints_object);
-
-    // compute the descriptors
-    //orb->compute(img_object, keypoints_object, descriptors_object);
-    extractor->compute(img_object, keypoints_object, descriptors_object);
-
-}
+StupidSlip::StupidSlip(unsigned int value) : threshold(value), bounding() {}
 
 // initialize the TLD tracker
 bool StupidSlip::initialize(cv::Mat frame, cv::Rect fovea) {
@@ -44,53 +22,6 @@ bool StupidSlip::initialize(cv::Mat frame, cv::Rect fovea) {
     }
 
     return false;
-
-}
-
-cv::Point2f StupidSlip::displacement(cv::Point2i center, cv::Mat gray) {
-
-    // detect the keypoints at the fovea
-    detector->detect(gray, keypoints_scene);
-
-    // find the object
-    //orb->compute(gray, keypoints_scene, descriptors_scene);
-    extractor->compute(gray, keypoints_scene, descriptors_scene);
-
-    // clear the vector
-    matches.clear();
-
-    // find the matches
-    matcher.match(descriptors_object, descriptors_scene, matches);
-
-    // reset the position
-    position.x = 0.0;
-    position.y = 0.0;
-
-    if (0 < matches.size()) {
-
-        for (int i = 0; i < matches.size(); i++) {
-
-            position += keypoints_scene[matches[i].trainIdx].pt;
-
-        }
-
-        // average
-        position.x = (position.x/matches.size()) - center.x;
-        position.y = (position.y/matches.size()) - center.y;
-
-        // draw the matches
-        if (0 < keypoints_scene.size()) {
-
-            cv::drawMatches(img_object, keypoints_object, gray, keypoints_scene, matches, img_matches);
-
-        }
-
-    }
-
-    // show the image
-    cv::imshow("matches", img_matches);
-
-    return position;
 
 }
 

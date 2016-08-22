@@ -51,21 +51,20 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
             // update the output
             new_value = buffer->pop();
 
-            log_input.x = b*new_value.x + 1;
-            log_input.y = b*new_value.y + 1;
-
             // update the horizontal
-            if (0 < new_value.x) {
+            if (0 <= new_value.x) {
+
+                log_input.x = b*new_value.x + 1;
 
                 if (d > new_value.x && e < new_value.x) {
 
                     // update the output
-                    output.x = a*log(b*new_value.x + 1);
+                    output.x = a*log(log_input.x);
 
                 } else if (e > new_value.x) {
 
                     // update the output
-                    output.x = (c*new_value.x*new_value.x)*a*log(b*new_value.x + 1);
+                    output.x = (c*new_value.x*new_value.x)*a*log(log_input.x);
 
                 } else {
 
@@ -74,7 +73,7 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
                 }
 
-            } else if (0 > output.x) {
+            } else if (0 > new_value.x) {
 
                 if (-d < new_value.x && -e > new_value.x) {
 
@@ -96,17 +95,19 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
             }
 
             // update the vertical
-            if (0 < new_value.y) {
+            if (0 <= new_value.y) {
+
+                log_input.y = b*new_value.y + 1;
 
                 if (d > new_value.y && e < new_value.y) {
 
                     // update the output
-                    output.y = a*log(b*new_value.y + 1);
+                    output.y = a*log(log_input.y);
 
                 } else if (e > new_value.y) {
 
                     // update the output
-                    output.y = (c*new_value.y*new_value.y)*a*log(b*new_value.y + 1);
+                    output.y = (c*new_value.y*new_value.y)*a*log(log_input.y);
 
                 } else {
 
@@ -135,7 +136,6 @@ class SmoothGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
                 }
 
             }
-
 
             // send the output value to external devices
             DeviceOutput<cv::Point2f>::send(output);

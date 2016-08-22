@@ -14,43 +14,14 @@ class StupidSlip {
 
     private:
 
-        // the gray converted image
-        cv::Mat gray;
-
         // the max value
         unsigned int threshold;
-
-        // the orb detector and extractor
-        cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> detector;
-        cv::Ptr<cv::xfeatures2d::SurfDescriptorExtractor> extractor;
-        cv::Ptr<cv::ORB> orb;
 
         // the tld tracker
         cv::Ptr<cv::Tracker> tld;
 
         // the tld bounding box
         cv::Rect2d bounding;
-
-        // the matcher
-        cv::FlannBasedMatcher matcher;
-
-        // the matches
-        std::vector<cv::DMatch> matches;
-
-        // show the matches
-        cv::Mat img_matches;
-
-        //the keypoints
-        std::vector<cv::KeyPoint> keypoints_object, keypoints_scene;
-
-        // the know object
-        cv::Mat img_object;
-
-        // the descriptors
-        cv::Mat descriptors_object, descriptors_scene;
-
-        // object position
-        cv::Point2f position;
 
     public:
 

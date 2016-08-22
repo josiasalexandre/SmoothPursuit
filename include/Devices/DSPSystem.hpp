@@ -81,7 +81,7 @@ class DSPSystem {
             FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(null_value);
 
             // SECOND PATHWAY
-            ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500, 0.00015, 3000);
+            ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500*0.85, 0.00015, 3000);
 
             // the low pass
             FIRDevice<61> *low_pass_2 = new FIRDevice<61>(1000, 8, LOW_PASS, HAMMING_WINDOW);

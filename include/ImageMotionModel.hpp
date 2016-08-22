@@ -69,6 +69,9 @@ class ImageMotionModel {
         // interpolation
         void LinearInterpolation();
 
+        // verify if two bounding box overlaps with each other
+        bool Overlap(const cv::Rect &a, const cv::Rect &b);
+
         // get the external frame
         cv::Rect GetExternalFrame(cv::Rect);
 
@@ -86,7 +89,7 @@ class ImageMotionModel {
         ImageMotionModel(float);
 
         // the main method
-        void Run();
+        void Run(const std::string&);
 
 };
 

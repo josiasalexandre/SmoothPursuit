@@ -214,14 +214,23 @@ void ImageMotionModel::SelectRoi() {
 
 }
 
+// verify if two bounding box overlaps with each other
+bool ImageMotionModel::Overlap(const cv::Rect &a, const cv::Rect &b) {
+
+    cv::Rect intersection(a & b);
+
+    return 0 < intersection.area();
+
+}
+
 // the main method
-void ImageMotionModel::Run() {
+void ImageMotionModel::Run(const std::string &statistics_filename) {
 
     cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
 
     int keyboard = 0;
 
-    int output_size;
+    unsigned int output_size;
 
     cv::Rect groundtruth_rect;
 
@@ -272,34 +281,32 @@ void ImageMotionModel::Run() {
     // image inside the fovea
     cv::Mat cropped_frame;
 
-    // the fovea's center
-    cv::Point2i center(fovea.width*0.5, fovea.height*0.5);
-
-    // the fovea threshold
-    float f_x_min_dist  = fovea.width*0.05;
-    float f_y_min_dist  = fovea.height*0.05;
-
-    // the fovea limit
-    float f_x_max_dist = fovea.width*0.75;
-    float f_y_max_dist = fovea.height*0.75;
 
     cv::Rect2i bounding_box;
-    cv::Rect2i external_frame;
 
-    unsigned int saccades = 0;
+    unsigned int saccades = 0, pursuits = 0;
+    unsigned int lost_frames = 0;
+    unsigned int success_frames = 0;
 
     /// the main loop
     while(!frame.empty() && 'q' != keyboard) {
 
+        // the fovea threshold
+        float f_x_min_dist  = fovea.width*0.05;
+        float f_y_min_dist  = fovea.height*0.05;
+
+        // the fovea limit
+        float f_x_max_dist = fovea.width*0.75;
+        float f_y_max_dist = fovea.height*0.75;
+
+        // the fovea's center
+        cv::Point2i center(fovea.width*0.5, fovea.height*0.5);
+
         // fovea position
         cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
-        // get the external frame
-        // external_frame = GetExternalFrame(fovea);
-
         // computes the displacement
         //displacement = stupid.displacement(center, cropped_frame);
-        // bounding_box = stupid.tld_displacement(frame, external_frame);
         bounding_box = stupid.tld_displacement(frame);
 
         // get the displacement
@@ -323,7 +330,7 @@ void ImageMotionModel::Run() {
         }
 
         // is the object escaping from the fovea's center? (x direction) and
-        // the displacement and the optical flow has the same direction?
+        // Does the displacement and the optical flow has the same direction?
         if (f_x_min_dist < std::fabs(displacement.x) && 0 < displacement.x * current_flow.x) {
 
             current_flow.x *= 1.75;
@@ -338,7 +345,7 @@ void ImageMotionModel::Run() {
 
         }
 
-        // save the current mean
+        // save the current flow
         last_flow = current_flow;
 
         // the first time? Used to run the step and sinusoidal input
@@ -453,34 +460,49 @@ void ImageMotionModel::Run() {
                     // the smooth pursuit model is closer to the ground truth
                     cv::Rect internal_frame;
 
+                    // restart the tracker
                     stupid.initialize(frame, groundtruth_rect);
+
+                    // set the pursuit helper
+                    pursuits += 1;
 
                     old_translation = translation;
 
                     // show the image
                     cv::imshow("frame", frame);
 
+                    if (Overlap(groundtruth_rect, fovea)) {
+
+                        success_frames += 1;
+
+                    } else {
+
+                        lost_frames += 1;
+                    }
+
                     keyboard = cv::waitKey(wait_time);
 
                     // get the next frame
                     input_video >> frame;
 
-                    // cv::flip(frame, frame, 1);
+                    if (!frame.empty()) {
 
-                    cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
+                        cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
-                    // reset the optical flow
-                    optical_flow.init(cropped_frame);
+                        // reset the optical flow
+                        optical_flow.init(cropped_frame);
 
-                    // update the reference rectangle
-                    reference >> groundtruth_rect.x;
-                    reference >> groundtruth_rect.y;
-                    reference >> groundtruth_rect.width;
-                    reference >> groundtruth_rect.height;
+                        // update the reference rectangle
+                        reference >> groundtruth_rect.x;
+                        reference >> groundtruth_rect.y;
+                        reference >> groundtruth_rect.width;
+                        reference >> groundtruth_rect.height;
+
+                    }
 
                     continue;
-                }
 
+                }
 
             }
 
@@ -488,28 +510,8 @@ void ImageMotionModel::Run() {
 
             std::cout << std::endl << "Sacade" << current_flow << "\n";
 
-            fovea.x += displacement.x;
-            fovea.y += displacement.y;
-
-            if (1 > fovea.x) {
-
-                fovea.x = 1;
-
-            } else if (fovea.x > frame.cols - (fovea.width+1)) {
-
-                fovea.x = frame.cols - (fovea.width + 1);
-
-            }
-
-            if (1 > fovea.y) {
-
-                fovea.y = 1;
-
-            } else if (fovea.y > frame.rows - (fovea.width + 1)) {
-
-                fovea.y = frame.rows - (fovea.width + 1);
-
-            }
+            // reset the fovea size
+            GetFoveaDimension(groundtruth_rect);
 
             // reset the system
             system.reset();
@@ -528,23 +530,35 @@ void ImageMotionModel::Run() {
             // show the image
             cv::imshow("frame", frame);
 
+            if (Overlap(groundtruth_rect, fovea)) {
+
+                success_frames += 1;
+
+            } else {
+
+                lost_frames += 1;
+            }
+
             keyboard = cv::waitKey(wait_time);
 
             // get the next frame
             input_video >> frame;
 
-            // cv::flip(frame, frame, 1);
+            if (!frame.empty()) {
 
-            cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
+                // cv::flip(frame, frame, 1);
+                cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
-            // reset the optical flow
-            optical_flow.init(cropped_frame);
+                // reset the optical flow
+                optical_flow.init(cropped_frame);
 
-            // update the reference rectangle
-            reference >> groundtruth_rect.x;
-            reference >> groundtruth_rect.y;
-            reference >> groundtruth_rect.width;
-            reference >> groundtruth_rect.height;
+                // update the reference rectangle
+                reference >> groundtruth_rect.x;
+                reference >> groundtruth_rect.y;
+                reference >> groundtruth_rect.width;
+                reference >> groundtruth_rect.height;
+
+            }
 
             continue;
 
@@ -567,7 +581,7 @@ void ImageMotionModel::Run() {
         output_size = output.size();
 
         // move the fovea
-        for (int i = 0; i < output_size; i++) {
+        for (unsigned int i = 0; i < output_size; ++i) {
 
             translation.x += (output[i].x) * dt;
             translation.y += (output[i].y) * dt;
@@ -638,8 +652,19 @@ void ImageMotionModel::Run() {
         // draw the reference frame
         cv::rectangle(frame, groundtruth_rect, cv::Scalar(0, 0,255));
 
+        cv::putText(frame, std::to_string(saccades) + std::string("/") + std::to_string(pursuits), cv::Point(20,20), CV_FONT_NORMAL, 0.5, cv::Scalar(250,250,0), 1, cv::LINE_AA);
+
         // show the image
         cv::imshow("frame", frame);
+
+        if (Overlap(groundtruth_rect, fovea)) {
+
+            success_frames += 1;
+
+        } else {
+
+            lost_frames += 1;
+        }
 
         keyboard = cv::waitKey(wait_time);
 
@@ -649,13 +674,47 @@ void ImageMotionModel::Run() {
         // get the next frame
         input_video >> frame;
 
-        // update the reference rectangle
-        reference >> groundtruth_rect.x;
-        reference >> groundtruth_rect.y;
-        reference >> groundtruth_rect.width;
-        reference >> groundtruth_rect.height;
+        if (!frame.empty()) {
+
+            // update the reference rectangle
+            reference >> groundtruth_rect.x;
+            reference >> groundtruth_rect.y;
+            reference >> groundtruth_rect.width;
+            reference >> groundtruth_rect.height;
+
+        }
 
     }
+
+    // save the statistics
+
+    // open the file
+    std::ofstream statistics;
+
+    if (!statistics_filename.empty()) {
+
+        statistics.open(statistics_filename.c_str());
+
+    } else {
+
+        statistics.open("statistics.csv");
+
+    }
+
+    if (!statistics.is_open()) {
+
+        std::cout << "Could not open the statistics file!\n";
+
+        return;
+
+    }
+
+
+    statistics << success_frames << ";" << lost_frames << "\n";
+    statistics << saccades << ";" << pursuits << "\n";
+
+    // close the statistics file
+    statistics.close();
 
 }
 
@@ -668,7 +727,7 @@ void ImageMotionModel::LinearInterpolation() {
 
     unsigned int interp = (fs/fps) - 1;
 
-    for (int i = 0; i < interp; i++) {
+    for (unsigned int i = 0; i < interp; ++i) {
 
         interpolated.push_back(current_flow);
 
@@ -742,33 +801,39 @@ void ImageMotionModel::GetFoveaDimension(cv::Rect &groundtruth_rect) {
 
         fovea.width = fovea.height = groundtruth_rect.height;
 
-        if (50 > fovea.width) {
+        if (30 > fovea.width) {
 
-            fovea.width = fovea.height = 50;
+            fovea.width = fovea.height = 30;
+
+        } else if (100 < fovea.height) {
+
+            fovea.height = fovea.width = 100;
 
         }
 
         // set the fovea position
-        fovea.x = groundtruth_rect.x - fovea.width / 2;
+        fovea.x = (groundtruth_rect.x + groundtruth_rect.width / 2) - fovea.width / 2;
         fovea.y = groundtruth_rect.y;
 
     } else {
 
         fovea.width = fovea.height = groundtruth_rect.width;
 
-        if (50 > fovea.width) {
+        if (30 > fovea.width) {
 
-            fovea.width = fovea.height = 50;
+            fovea.width = fovea.height = 30;
+
+        } else if (100 > fovea.height) {
+
+            fovea.width = fovea.height = 100;
 
         }
 
         // set the fovea position
         fovea.x = groundtruth_rect.x;
-        fovea.y = groundtruth_rect.y - fovea.height / 2;
+        fovea.y = (groundtruth_rect.y + groundtruth_rect.height) - fovea.height / 2;
 
     }
-
-
 
     int dx = fovea.x + fovea.width;
 

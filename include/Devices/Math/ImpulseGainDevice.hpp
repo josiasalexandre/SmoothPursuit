@@ -73,7 +73,7 @@ class ImpulseGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Poin
                 // update the output
                 output.y = a*log(b*new_value.y + 1);
 
-            } else if (-c > output.y) {
+            } else if (-c > new_value.y) {
 
                 // update the output
                 output.y = -a*log(b*(-new_value.y) + 1);
