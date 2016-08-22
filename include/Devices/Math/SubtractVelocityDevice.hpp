@@ -31,6 +31,21 @@ class SubtractVelocityDevice : virtual public MultInputDevice<T, T, 2> {
             DeviceOutput<T>::send(result);
 
         };
+        
+        // implement the reset function
+        virtual void reset() {
+            
+            // set the output to zero
+            // clear the entire input buffer
+            for (int i = 0; i < 2; i++) {
+
+                // clear the entire buffer
+                MultInputDevice<T, T, 2>::inputs[i].first.clear();
+
+            }
+            
+            
+        }
 
 };
 

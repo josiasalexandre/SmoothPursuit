@@ -17,7 +17,10 @@ class ImageMotionModel {
     private:
 
         // the video capture device
-        cv::VideoCapture video;
+        cv::VideoCapture input_video;
+
+        // the output video
+        cv::VideoWriter output_video;
 
         // the frame rate and the sampling frequency
         float fps, fs;
@@ -41,35 +44,49 @@ class ImageMotionModel {
         bool testing;
 
         // private methods
-        void mouse_click_callback(int, int, int, int);
-        static void mouse_click(int, int, int, int, void*);
-        void select_roi();
-        void find_roi(cv::Mat);
+        void MouseClickCallback(int, int, int, int);
+        static void MouseClick(int, int, int, int, void*);
+        void SelectRoi();
+        void FindRoi(cv::Mat);
 
         // the interpolated signal
         std::vector<cv::Point2f> interpolated, output;
         cv::Point2f last_flow, expected_mean, current_flow;
         cv::Point2f displacement;
 
+        unsigned int wait_time;
+        float dt;
+
+        // the groundtruth filename
+        std::string groundtruth;
+
+        // the groundtruth flag
+        bool hasgroundtruth;
+
         // the DSP system
         DSPSystem system;
 
         // interpolation
-        void linear_interpolation();
+        void LinearInterpolation();
 
-        unsigned int wait_time;
-        float dt;
+        // get the external frame
+        cv::Rect GetExternalFrame(cv::Rect);
+
+        // get the external frame
+        cv::Rect GetInternalFrame(cv::Rect, cv::Rect);
+
+        void GetFoveaDimension(cv::Rect&);
 
     public:
 
         // basic constructor with video filename and frame rate
-        ImageMotionModel(const std::string, float);
+        ImageMotionModel(const std::string input_video, float frame_rate, const std::string ground, std::string output_video);
 
         // basic constructor with camera and frame rate
         ImageMotionModel(float);
 
         // the main method
-        void run();
+        void Run();
 
 };
 

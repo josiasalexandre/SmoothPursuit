@@ -1,12 +1,15 @@
 #include <ImageMotionModel.hpp>
+
 #include <stdexcept>
 
 // basic constructor with video filename and frame rate
-ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
-    video(filename),
+ImageMotionModel::ImageMotionModel(const std::string input_video_filename, float frame_rate, const std::string gt, std::string output_video_filename) :
+    input_video(input_video_filename),
+    output_video(),
     fps(frame_rate),
     wait_time(1000/frame_rate),
     dt(0.001),
+    groundtruth(gt),
     fs(1000),
     fovea(300.0, 200.0, 100, 100),
     system(),
@@ -23,27 +26,49 @@ ImageMotionModel::ImageMotionModel(std::string filename, float frame_rate) :
 {
 
     // verify video capture object
-    if (!video.isOpened()) {
+    if (!input_video.isOpened()) {
 
         // throw an exception
-        throw std::invalid_argument("invalid filename");
+        throw std::invalid_argument("invalid input video filename");
 
     }
 
-    // get the first frame
-    video >> frame;
+    // get the codec
+    int ex = static_cast<int>(input_video.get(CV_CAP_PROP_FOURCC));
+    cv::Size S = cv::Size((int) input_video.get(CV_CAP_PROP_FRAME_WIDTH),(int) input_video.get(CV_CAP_PROP_FRAME_HEIGHT));
 
-    select_roi();
+    // open the output video
+    output_video.open(output_video_filename, ex, fps, S, true);
+
+    if (!output_video.isOpened()) {
+
+        // throw an exception
+        throw std::invalid_argument("invalid output video filename");
+
+    }
+
+    // set the groundtruth flag
+    hasgroundtruth = !groundtruth.empty();
+
+    // get the first frame
+    input_video >> frame;
+
+    if (!hasgroundtruth) {
+
+        SelectRoi();
+
+    }
 
 }
 
 // basic constructor with camera and frame rate
 ImageMotionModel::ImageMotionModel(float frame_rate) :
-    video(0),
+    input_video(0),
     fps(frame_rate),
     fs(1000),
     wait_time(1000/frame_rate),
     dt(0.001),
+    groundtruth(),
     fovea(300.0, 200.0, 100, 100),
     system(),
     interpolated(0),
@@ -59,23 +84,32 @@ ImageMotionModel::ImageMotionModel(float frame_rate) :
 {
 
     // verify video capture object
-    if (!video.isOpened()) {
+    if (!input_video.isOpened()) {
 
         // throw an exception
         throw std::invalid_argument("invalid device");
 
     }
 
-    // get the first frame
-    video >> frame;
+    // set the groundtruth flag
+    hasgroundtruth = false;
 
-    // get the ROI
-    select_roi();
+    // get the first frame
+    input_video >> frame;
+
+    // cv::flip(frame, frame, 1);
+
+    if (!hasgroundtruth) {
+
+        // get the ROI
+        SelectRoi();
+
+    }
 
 }
 
 // mouse callback
-void ImageMotionModel::mouse_click_callback(int event, int x, int y, int flags) {
+void ImageMotionModel::MouseClickCallback(int event, int x, int y, int flags) {
 
     if (cv::EVENT_LBUTTONDBLCLK == event) {
 
@@ -87,18 +121,18 @@ void ImageMotionModel::mouse_click_callback(int event, int x, int y, int flags) 
 }
 
 // the mouse click event
-void ImageMotionModel::mouse_click(int event, int x, int y, int flags, void* param) {
+void ImageMotionModel::MouseClick(int event, int x, int y, int flags, void* param) {
 
     ImageMotionModel *self = static_cast<ImageMotionModel *>(param);
 
-    self->mouse_click_callback(event, x, y, flags);
+    self->MouseClickCallback(event, x, y, flags);
 
 }
 
 // just centering the fovea at some inside red object
 // double click in the geometric object
 // press f to call this function
-void ImageMotionModel::find_roi(cv::Mat temp_window) {
+void ImageMotionModel::FindRoi(cv::Mat temp_window) {
 
     cv::Point2i center(0.0, 0.0);
 
@@ -137,7 +171,7 @@ void ImageMotionModel::find_roi(cv::Mat temp_window) {
 }
 
 // get the REGION OF INTEREST
-void ImageMotionModel::select_roi() {
+void ImageMotionModel::SelectRoi() {
 
     int keyboard = 0;
 
@@ -145,7 +179,7 @@ void ImageMotionModel::select_roi() {
 
     cv::namedWindow("select", cv::WINDOW_AUTOSIZE);
 
-    cv::setMouseCallback("select", mouse_click, this);
+    cv::setMouseCallback("select", MouseClick, this);
 
     while('q' != (char) keyboard) {
 
@@ -157,12 +191,12 @@ void ImageMotionModel::select_roi() {
 
         keyboard = cv::waitKey(wait_time);
 
-        if (43 == keyboard) {
+        if (1114027 == keyboard) {
 
             fovea.width += 1;
             fovea.height += 1;
 
-        } else if (45 == keyboard) {
+        } else if (1114029 == keyboard) {
 
             fovea.width -= 1;
             fovea.height -= 1;
@@ -170,7 +204,7 @@ void ImageMotionModel::select_roi() {
         } else if ('f' == (char) keyboard) {
 
             // center the fovea at some inside red object
-            find_roi(frame(fovea).clone());
+            FindRoi(frame(fovea).clone());
 
         }
 
@@ -181,7 +215,7 @@ void ImageMotionModel::select_roi() {
 }
 
 // the main method
-void ImageMotionModel::run() {
+void ImageMotionModel::Run() {
 
     cv::namedWindow("frame", cv::WINDOW_AUTOSIZE);
 
@@ -189,26 +223,51 @@ void ImageMotionModel::run() {
 
     int output_size;
 
-    cv::Point2f error(0.0, 0.0);
+    cv::Rect groundtruth_rect;
 
-    // some output files to save octave plots
-    std::ofstream error_file, signal_file;
+    // the groundtruth file
+    std::ifstream reference;
 
-    error_file.open("error.mat");
-    if (!error_file.is_open()) {
-        std::cout << std::endl << "Could not open the file error.mat" << std::endl;
-        return;
+    // set the fovea value
+
+    if (hasgroundtruth) {
+
+        reference.open(groundtruth);
+
+        if (!reference.is_open()) {
+
+            std::cout << "Could not open the groundtruth.txt file";
+            return;
+
+        }
+
+        // get the first reference
+        reference >> groundtruth_rect.x;
+        reference >> groundtruth_rect.y;
+        reference >> groundtruth_rect.width;
+        reference >> groundtruth_rect.height;
+
+        // Get the fovea dimensions
+        GetFoveaDimension(groundtruth_rect);
+
+        if (!stupid.initialize(frame, groundtruth_rect)) {
+
+            // excepction
+            throw std::exception();
+
+        }
+
+    } else {
+
+        // start the tld tracker
+        if (!stupid.initialize(frame, fovea)) {
+
+            // excepction
+            throw std::exception();
+
+        }
+
     }
-
-    signal_file.open("signal.mat");
-    if (!signal_file.is_open()) {
-        std::cout << std::endl << "Could not open the file signal.mat" << std::endl;
-        return;
-    }
-
-    // vectors to store the optical flow and the system output
-    std::vector<cv::Point2f> input_signal(0);
-    std::vector<cv::Point2f> output_signal(0);
 
     // image inside the fovea
     cv::Mat cropped_frame;
@@ -221,18 +280,31 @@ void ImageMotionModel::run() {
     float f_y_min_dist  = fovea.height*0.05;
 
     // the fovea limit
-    float f_x_max_dist = fovea.width*0.4;
-    float f_y_max_dist = fovea.height*0.4;
+    float f_x_max_dist = fovea.width*0.75;
+    float f_y_max_dist = fovea.height*0.75;
 
-    // the main loop
+    cv::Rect2i bounding_box;
+    cv::Rect2i external_frame;
+
+    unsigned int saccades = 0;
+
+    /// the main loop
     while(!frame.empty() && 'q' != keyboard) {
 
         // fovea position
         cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
+        // get the external frame
+        // external_frame = GetExternalFrame(fovea);
+
         // computes the displacement
-        displacement = stupid.displacement(center, cropped_frame);
-        // displacement = stupid.stupid_displacement(center, frame(fovea).clone());
+        //displacement = stupid.displacement(center, cropped_frame);
+        // bounding_box = stupid.tld_displacement(frame, external_frame);
+        bounding_box = stupid.tld_displacement(frame);
+
+        // get the displacement
+        displacement.x = (bounding_box.x + bounding_box.width * 0.5) - (fovea.x + fovea.width * 0.5);
+        displacement.y = (bounding_box.y + bounding_box.height * 0.5) - (fovea.y + fovea.height * 0.5);
 
         // optical flow
         // current_flow = optical_flow.run(cropped_frame);
@@ -241,31 +313,30 @@ void ImageMotionModel::run() {
         // current_flow = optical_flow.run_lkpyr(cropped_frame);
         // current_flow = optical_flow.run_lkpyr(cropped_frame, old_translation);
         current_flow = optical_flow.run_lkpyr2(cropped_frame, old_translation);
+        // std::cout << "Current flow: " << current_flow << "\n";
 
         // verify th NaN and inf cases
         if (current_flow != current_flow || std::isinf(current_flow.x) || std::isinf(current_flow.y)) {
+
             current_flow = last_flow;
-            std::cout << std::endl << NAN << std::endl;
+
         }
 
         // is the object escaping from the fovea's center? (x direction) and
         // the displacement and the optical flow has the same direction?
-        if (f_x_min_dist < std::fabs(displacement.x) && 0 < displacement.x*current_flow.x) {
+        if (f_x_min_dist < std::fabs(displacement.x) && 0 < displacement.x * current_flow.x) {
 
             current_flow.x *= 1.75;
 
         }
 
         // is the object escaping from the fovea's center? (y direction)
-        // the displacement and the optical flow has the same direction?
-        if (f_y_min_dist < std::fabs(displacement.y) && 0 < displacement.y*current_flow.y) {
+        // Does the displacement and the optical flow have the same direction?
+        if (f_y_min_dist < std::fabs(displacement.y) && 0 < displacement.y * current_flow.y) {
 
             current_flow.y *= 1.75;
 
         }
-
-        // save the current flow to the input signal vector
-        input_signal.push_back(current_flow);
 
         // save the current mean
         last_flow = current_flow;
@@ -277,7 +348,7 @@ void ImageMotionModel::run() {
             std::ofstream plot;
 
             // open the file
-            plot.open("plot.mat");
+            plot.open("test.m");
 
             float time = 15.0/50.0;;
 
@@ -285,56 +356,67 @@ void ImageMotionModel::run() {
             std::vector<cv::Point2f> signal;
 
             for (int i = 0; i < 50; i++) {
-                signal.push_back(cv::Point2f(time*i, 15*std::sin(i*dt*2*M_PI)));
+                signal.push_back(cv::Point2f(-15*std::sin(i*dt*2*M_PI), -time*i));
 
             }
 
             for (int i = 50; i < 6000; i++) {
-                signal.push_back(cv::Point2f(15.0, 15*std::sin(i*dt*2*M_PI)));
+                signal.push_back(cv::Point2f(-15*std::sin(i*dt*2*M_PI), -15.0));
             }
 
             std::vector<cv::Point2f> result = system.run(signal);
 
-            plot << "step = [";
+            plot << "function test()\n";
+            plot << "    step = [";
             for (int i = 0; i < signal.size(); i++) {
                 plot << " " << signal[i].x;
+
+                if ((i+1) % 50 == 0)
+                    plot << " ...\n";
             }
 
-            plot << " ]" << std::endl;
+            plot << " ];\n";;
 
-            plot << "sinusoidal = [";
+            plot << "    sinusoidal = [";
             for (int i = 0; i < signal.size(); i++) {
                 plot << " " << signal[i].y;
+
+                if ((i + 1) % 50 == 0)
+                    plot << " ...\n";
             }
 
-            plot << " ]" << std::endl;
+            plot << " ];\n";;
 
-            plot << std::endl << "step_result = [";
+            plot << "    step_result = [";
 
             for (int i = 0; i < result.size(); i++) {
                 plot << " " << result[i].x;
+
+                if ((i + 1) % 50 == 0)
+                    plot << " ...\n";
             }
 
-            plot << " ]" << std::endl;
+            plot << "];\n";;
 
 
-            plot << std::endl << "sinusoidal_result = [";
+            plot << "    sinusoidal_result = [";
 
             for (int i = 0; i < result.size(); i++) {
                 plot << " " << result[i].y;
+
+                if ((i + 1) % 50 == 0)
+                    plot << " ...\n";
             }
 
-            plot << " ]" << std::endl;
+            plot << "];\n";;
 
-            plot << std::endl << "graphics_toolkit('gnuplot')" << std::endl;
+            plot << "    plot(1:length(step), step, 1:length(step_result), step_result, '.');\n";
 
-            plot << std::endl << "plot(1:length(step), step, 1:length(step_result), step_result, '.')" << std::endl;
+            plot << "    figure;\n";
 
-            plot << std::endl << "figure" << std::endl;
+            plot << "    plot(1:length(sinusoidal), sinusoidal, 1:length(sinusoidal), sinusoidal_result, '.')\n";
 
-            plot << std::endl << "plot(1:length(sinusoidal), sinusoidal, 1:length(sinusoidal), sinusoidal_result, '.')" << std::endl;
-
-            plot << "pause" << std::endl;;
+            plot << "end\n";
 
             // close the output file
             plot.close();
@@ -343,10 +425,68 @@ void ImageMotionModel::run() {
 
         }
 
-        // saccade
+        // saccade?
         if (f_x_max_dist < std::fabs(displacement.x) || f_y_max_dist < std::fabs(displacement.y)) {
 
-            std::cout << std::endl << "Sacade" << current_flow << std::endl;
+            if (hasgroundtruth) {
+
+                // get the groundtruth_rect center
+                int gt_center_x = groundtruth_rect.x + groundtruth_rect.width / 2;
+                int gt_center_y = groundtruth_rect.y + groundtruth_rect.height / 2;
+
+                // get the fovea center
+                int fovea_center_x = fovea.x + fovea.width / 2;
+                int fovea_center_y = fovea.y + fovea.height / 2;
+
+                // get the bounding box center
+                int bbox_center_x = bounding_box.x + bounding_box.width / 2;
+                int bbox_center_y = bounding_box.y + bounding_box.height / 2;
+
+                // the fovea squared distance to the groundtruth
+                int fovea_distance = std::pow(gt_center_x - fovea_center_x, 2) + std::pow(gt_center_y - fovea_center_y, 2);
+
+                // the tracker distance to the fovea
+                int tracker_distance = std::pow(gt_center_x - bbox_center_x, 2) + std::pow(gt_center_y - bbox_center_y, 2);
+
+                if (fovea_distance < tracker_distance) {
+
+                    // the smooth pursuit model is closer to the ground truth
+                    cv::Rect internal_frame;
+
+                    stupid.initialize(frame, groundtruth_rect);
+
+                    old_translation = translation;
+
+                    // show the image
+                    cv::imshow("frame", frame);
+
+                    keyboard = cv::waitKey(wait_time);
+
+                    // get the next frame
+                    input_video >> frame;
+
+                    // cv::flip(frame, frame, 1);
+
+                    cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
+
+                    // reset the optical flow
+                    optical_flow.init(cropped_frame);
+
+                    // update the reference rectangle
+                    reference >> groundtruth_rect.x;
+                    reference >> groundtruth_rect.y;
+                    reference >> groundtruth_rect.width;
+                    reference >> groundtruth_rect.height;
+
+                    continue;
+                }
+
+
+            }
+
+            saccades += 1;
+
+            std::cout << std::endl << "Sacade" << current_flow << "\n";
 
             fovea.x += displacement.x;
             fovea.y += displacement.y;
@@ -375,7 +515,7 @@ void ImageMotionModel::run() {
             system.reset();
 
             // interpolate the signal between frames
-            linear_interpolation();
+            LinearInterpolation();
 
             // just to insert somo direction to the dsp system
             output = system.run(interpolated);
@@ -391,12 +531,20 @@ void ImageMotionModel::run() {
             keyboard = cv::waitKey(wait_time);
 
             // get the next frame
-            video >> frame;
+            input_video >> frame;
+
+            // cv::flip(frame, frame, 1);
 
             cv::cvtColor(frame(fovea).clone(), cropped_frame, cv::COLOR_BGR2GRAY);
 
             // reset the optical flow
             optical_flow.init(cropped_frame);
+
+            // update the reference rectangle
+            reference >> groundtruth_rect.x;
+            reference >> groundtruth_rect.y;
+            reference >> groundtruth_rect.width;
+            reference >> groundtruth_rect.height;
 
             continue;
 
@@ -407,7 +555,7 @@ void ImageMotionModel::run() {
         current_flow.y = current_flow.y*fps;
 
         // interpolate
-        linear_interpolation();
+        LinearInterpolation();
 
         // clear the output
         output.clear();
@@ -415,29 +563,20 @@ void ImageMotionModel::run() {
         // process the interpolated signal
         output = system.run(interpolated);
 
-        //save the input signal
-        output_signal.insert(output_signal.end(), output.begin(), output.end());
-
         // get the output size
         output_size = output.size();
 
         // move the fovea
         for (int i = 0; i < output_size; i++) {
 
-            translation.x += (output[i].x)*dt;
-            translation.y += (output[i].y)*dt;
+            translation.x += (output[i].x) * dt;
+            translation.y += (output[i].y) * dt;
 
         }
 
         // save the translation info
         old_translation.x = (int) translation.x;
         old_translation.y = (int) translation.y;
-
-        // computes the error
-        error = current_flow - translation;
-
-        // save the error to the plot file
-        error_file << " " << error;
 
         if (1 < std::abs(translation.x)) {
 
@@ -496,91 +635,32 @@ void ImageMotionModel::run() {
         // draw the fovea rectangle
         cv::rectangle(frame, fovea, cv::Scalar(0, 255, 0));
 
+        // draw the reference frame
+        cv::rectangle(frame, groundtruth_rect, cv::Scalar(0, 0,255));
+
         // show the image
         cv::imshow("frame", frame);
 
         keyboard = cv::waitKey(wait_time);
 
+        // save the current frame to the output video
+        output_video << frame;
+
         // get the next frame
-        video >> frame;
+        input_video >> frame;
+
+        // update the reference rectangle
+        reference >> groundtruth_rect.x;
+        reference >> groundtruth_rect.y;
+        reference >> groundtruth_rect.width;
+        reference >> groundtruth_rect.height;
 
     }
-
-    // savin some text file to run octave simulations and plots
-    error_file << " ]" << std::endl;
-
-    error_file << "graphics_toolkit('gnuplot')" << std::endl;
-
-    error_file << "plot(1:length(error), error)" << std::endl;
-
-    error_file << "pause" << std::endl;
-
-    error_file.close();
-
-    signal_file << "inputx = [";
-    // save the input and output signal
-
-    for (int i = 0; i < input_signal.size(); i++) {
-
-        signal_file << " " << input_signal[i].x;
-
-    }
-
-    signal_file << " ]" << std::endl;
-
-    signal_file << "inputy = [";
-    // save the input and output signal
-
-    for (int i = 0; i < input_signal.size(); i++) {
-
-        signal_file << " " << input_signal[i].y;
-
-    }
-
-    signal_file << " ]" << std::endl;
-
-    signal_file << "outputx = [";
-    for (int i = 0; i < output_signal.size(); i++) {
-
-        signal_file << " " << output_signal[i].x;
-
-    }
-
-    signal_file << " ]" << std::endl;
-
-    signal_file << "outputy = [";
-    for (int i = 0; i < output_signal.size(); i++) {
-
-        signal_file << " " << output_signal[i].y;
-
-    }
-
-    signal_file << " ]" << std::endl;
-
-    signal_file << std::endl << "graphics_toolkit('gnuplot')" << std::endl;
-
-    signal_file << "filt = fir1(80, 0.1)" << std::endl;
-
-    signal_file << "filtered = filter(filt, 1, inputx)" << std::endl;
-
-    signal_file << "plot(1:length(inputx), inputx)" << std::endl;
-
-    signal_file << "figure" << std::endl;
-
-    signal_file << "plot(1:length(filtered), filtered)" << std::endl;
-
-    signal_file << "figure" << std::endl;
-
-    signal_file << "plot(1:length(outputx), outputx)" << std::endl;
-
-    signal_file << "pause" << std::endl;
-
-    signal_file.close();
 
 }
 
 // the linear interpolation method
-void ImageMotionModel::linear_interpolation() {
+void ImageMotionModel::LinearInterpolation() {
 
     interpolated.clear();
 
@@ -595,3 +675,139 @@ void ImageMotionModel::linear_interpolation() {
     }
 
 }
+
+// get the external frame
+cv::Rect ImageMotionModel::GetExternalFrame(cv::Rect fovea) {
+
+    // the returning external frame
+    cv::Rect external_frame;
+
+    // get the x coordinate
+    external_frame.x = fovea.x - fovea.width / 2;
+
+    int x = external_frame.x + 2 * fovea.width;
+
+    // verify the limits
+    if (x >= frame.cols) {
+
+        external_frame.x -= (x - frame.cols);
+
+    }
+
+    if (1 > external_frame.x) {
+
+        external_frame.x = 1;
+
+    }
+
+    // get the y coordinate
+    external_frame.y = fovea.y - fovea.height / 2;
+
+    int y = external_frame.y + 2 * fovea.height;
+
+    // verify the limits
+    if (y >= frame.rows) {
+
+        external_frame.y -= (y - frame.rows);
+
+    }
+
+    if (1 > external_frame.y) {
+
+        external_frame.y = 1;
+
+    }
+
+    // set the external frame size
+    external_frame.width = std::min(2*fovea.width, frame.cols);
+    external_frame.height = std::min(2*fovea.height, frame.rows);
+
+    // return the resulting external frame
+    return external_frame;
+
+}
+
+// get the external frame
+cv::Rect ImageMotionModel::GetInternalFrame(cv::Rect external_frame, cv::Rect fovea) {
+
+    // the resulting internal frame
+    return cv::Rect(fovea.x - external_frame.x, fovea.y - external_frame.y, fovea.width, fovea.height);
+
+}
+
+//
+void ImageMotionModel::GetFoveaDimension(cv::Rect &groundtruth_rect) {
+
+    if (groundtruth_rect.width < groundtruth_rect.height) {
+
+        fovea.width = fovea.height = groundtruth_rect.height;
+
+        if (50 > fovea.width) {
+
+            fovea.width = fovea.height = 50;
+
+        }
+
+        // set the fovea position
+        fovea.x = groundtruth_rect.x - fovea.width / 2;
+        fovea.y = groundtruth_rect.y;
+
+    } else {
+
+        fovea.width = fovea.height = groundtruth_rect.width;
+
+        if (50 > fovea.width) {
+
+            fovea.width = fovea.height = 50;
+
+        }
+
+        // set the fovea position
+        fovea.x = groundtruth_rect.x;
+        fovea.y = groundtruth_rect.y - fovea.height / 2;
+
+    }
+
+
+
+    int dx = fovea.x + fovea.width;
+
+    if (frame.cols <= dx) {
+
+        fovea.x -= (dx - frame.cols);
+
+    }
+
+    if (1 > fovea.x) {
+
+        fovea.x = 1;
+
+    }
+
+    // set the fovea position
+    fovea.y = groundtruth_rect.y;
+
+    int dy = fovea.y + fovea.height;
+
+    if (frame.rows <= dy) {
+
+        fovea.y -= (dy - frame.rows);
+
+    }
+
+    if (1 > fovea.y) {
+
+        fovea.y = 1;
+
+    }
+
+    // start the tld tracker
+    if (!stupid.initialize(frame, fovea)) {
+
+        // excepction
+        throw std::exception();
+
+    }
+
+}
+

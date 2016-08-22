@@ -1,10 +1,11 @@
 #include <StupidSlip.hpp>
+#include <iostream>
 
 // basic constructor
-StupidSlip::StupidSlip(unsigned int value) : threshold(value) {
+StupidSlip::StupidSlip(unsigned int value) : threshold(value), bounding() {
 
      //load the image
-    img_object = cv::imread("../Examples/reference_texture.png", CV_LOAD_IMAGE_GRAYSCALE);
+    img_object = cv::imread("../Examples/Lemming/Lemming_reference.png", CV_LOAD_IMAGE_GRAYSCALE);
 
     // verify image
     if (img_object.empty()) {
@@ -22,6 +23,27 @@ StupidSlip::StupidSlip(unsigned int value) : threshold(value) {
     // compute the descriptors
     //orb->compute(img_object, keypoints_object, descriptors_object);
     extractor->compute(img_object, keypoints_object, descriptors_object);
+
+}
+
+// initialize the TLD tracker
+bool StupidSlip::initialize(cv::Mat frame, cv::Rect fovea) {
+
+    // the tld version
+    tld = cv::Tracker::create("BOOSTING");
+
+    // create a new tracker
+    bounding = fovea;
+
+    if (tld->init(frame, bounding)) {
+
+        cv::rectangle(frame, bounding, cv::Scalar( 255, 0, 0 ), 2, 1);
+
+        return true;
+
+    }
+
+    return false;
 
 }
 
@@ -108,9 +130,33 @@ cv::Point2f StupidSlip::stupid_displacement(cv::Point2i center, cv::Mat frame) {
         disp.x = std::floor(disp.x + 0.6);
         disp.y = std::floor(disp.y + 0.6);
 
-
     }
 
     return disp;
+
+}
+
+cv::Rect2i StupidSlip::tld_displacement(cv::Mat frame) {
+
+    // update the tld
+    tld->update(frame, bounding);
+
+    cv::rectangle(frame, bounding, cv::Scalar( 255, 0, 0 ), 2, 1);
+
+    return bounding;
+
+}
+
+cv::Rect2i StupidSlip::tld_displacement(cv::Mat frame, cv::Rect external_frame) {
+
+    // update the tld
+    tld->update(frame(external_frame).clone(), bounding);
+
+    // move the bounding box to the external frame reference
+    cv::Rect internal_frame(external_frame.x + bounding.x, external_frame.y + bounding.y, bounding.width, bounding.height);
+
+    cv::rectangle(frame, internal_frame, cv::Scalar( 255, 0, 0 ), 2, 1);
+
+    return internal_frame;
 
 }

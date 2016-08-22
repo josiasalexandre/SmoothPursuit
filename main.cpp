@@ -2,38 +2,23 @@
 
 int main(int argc, char **argv) {
 
-    std::string filename;
-    if (1 < argc) {
+    // the first experiment
+    // std::string input_video = "/home/josias/Projects/dsp/Examples/Lemming/Lemming0001-1336.avi";
+    // int frame_rate = 25;
+    // std::string groundtruth = "/home/josias/Projects/dsp/Examples/Lemming/groundtruth_rect.txt";
+    // std::string output_video = "/home/josias/Projects/dsp/Examples/Lemming/LemmingTracking.avi";
 
-        filename = std::string(argv[1]);
-
-    }
-
-    if (filename.empty()) {
-
-        // filename = "../Examples/walk.avi";
-        // filename = "../Examples/ball.avi";
-        // filename = "../Examples/ball_linear.avi";
-        // filename = "../Examples/ball_step.avi";
-        // filename = "../Examples/ball_step_x.avi";
-        // filename = "../Examples/dot_step_x.avi";
-        // filename = "../Examples/dot_step_x_texture.avi";
-        // filename = "../Examples/ball_bg_texture_1.avi";
-        // filename = "../Examples/ball_bg_texture_2.avi";
-        // filename = "../Examples/ball_bg_texture_3.avi";
-        filename = "../Examples/ball_bg_texture_3.avi";
-        // filename = "../Examples/walk.avi";
-        // filename = "../Examples/walk.avi";
-        // filename = "../Examples/walk.avi";
-        // filename = "../Examples/walk.avi";
-    }
+    std::string input_video = "/home/josias/Projects/dsp/Examples/Walking/walking0001-0412.avi";
+    int frame_rate = 25;
+    std::string groundtruth = "/home/josias/Projects/dsp/Examples/Walking/groundtruth_rect.txt";
+    std::string output_video = "/home/josias/Projects/dsp/Examples/Walking/WalkingTracking.avi";
 
     // build the ImageMotionModel
     // ImageMotionModel smooth_pursuit(25);
-    ImageMotionModel smooth_pursuit(filename, 25);
+    ImageMotionModel smooth_pursuit(input_video, frame_rate, groundtruth, output_video);
 
     // executes the simulation
-    smooth_pursuit.run();
+    smooth_pursuit.Run();
 
     return 0;
 

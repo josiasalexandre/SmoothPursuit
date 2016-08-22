@@ -48,6 +48,9 @@ class DSPSystem {
              *
              */
 
+            // just a helper
+            cv::Point2f null_value(0.0, 0.0);
+
             // the input
             LinearGainDevice *system_input = new LinearGainDevice(1.0);
 
@@ -60,7 +63,7 @@ class DSPSystem {
 
             // get the input buffer
             // input_buffer = subtract->get_buffer(0);
-            //subtract->add_signal_source(first_buffer, 0);
+            // subtract->add_signal_source(system_input, 0);
 
             // the delay device
             //DelayDevice *delay_1 = new DelayDevice(10);
@@ -75,7 +78,7 @@ class DSPSystem {
             FIRDevice<61> *low_pass_1 = new FIRDevice<61>(1000, 5, LOW_PASS, HAMMING_WINDOW);
 
             // derivative
-            FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(cv::Point2f(0.0, 0.0));
+            FirstDifferentiatorDevice *differentiator = new FirstDifferentiatorDevice(null_value);
 
             // SECOND PATHWAY
             ImpulseGainDevice *impulse_gain = new ImpulseGainDevice(17500, 0.00015, 3000);
@@ -84,17 +87,17 @@ class DSPSystem {
             FIRDevice<61> *low_pass_2 = new FIRDevice<61>(1000, 8, LOW_PASS, HAMMING_WINDOW);
 
             // THIRD PATHWAY
-            SmoothGainDevice *smooth_gain = new SmoothGainDevice(28*0.85, 0.08, 0.16, 500, 18.5);
+            SmoothGainDevice *smooth_gain = new SmoothGainDevice(24*0.85, 0.08, 0.16, 500*0.25, 18.5*0.5);
 
             // the low pass
             FIRDevice<61> *low_pass_3 = new FIRDevice<61>(1000, 16, LOW_PASS, HAMMING_WINDOW);
 
             // summ all paths
-            AddSignalsDevice<cv::Point2f, 3> *sum = new AddSignalsDevice<cv::Point2f, 3>(cv::Point2f(0.0, 0.0));
+            AddSignalsDevice<cv::Point2f, 3> *sum = new AddSignalsDevice<cv::Point2f, 3>(null_value);
             // AddSignalsDevice<cv::Point2f, 2> *sum = new AddSignalsDevice<cv::Point2f, 2>(cv::Point2f(0.0, 0.0));
 
             // integrator
-            TrapzIntegratorDevice *integrator = new TrapzIntegratorDevice(cv::Point2f(0.0, 0.0));
+            TrapzIntegratorDevice *integrator = new TrapzIntegratorDevice(null_value);
 
             // Just a first order IIR filter
             // the plant low pass filter
@@ -109,7 +112,7 @@ class DSPSystem {
 
             // CONNECT ALL DEVICES
             delay_1->add_signal_source(system_input);
-            //delay_1->add_signal_source(subtract);
+            // delay_1->add_signal_source(subtract);
             // delay_2->add_signal_source(subtract);
 
 
@@ -157,14 +160,14 @@ class DSPSystem {
             // feedback_gain->add_signal_source(plant);
 
             // the feedback connection FOVEA
-            //subtract->add_signal_source(feedback_gain, 1);
+            // subtract->add_signal_source(plant, 1);
 
             // connect the plant to output
             system_output->add_signal_source(plant);
 
             // SAVE THE DEVICES
             input_devices.push_back(system_input);
-            // input_devices.push_back(subtract);
+            // on_devices.push_back(subtract);
             on_devices.push_back(delay_1);
             // on_devices.push_back(delay_2);
             on_devices.push_back(linear_gain);
