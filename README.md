@@ -35,7 +35,13 @@ To compile the project, go to the project folder and follow the instructions bel
   
 Examples:
 
-
+        Walking:
+            https://youtu.be/fZTe2r1lRZE
+        Sylvester:
+            https://youtu.be/tqvfIf3TczU
+        Lemming:
+            https://youtu.be/P9ziMkX9U0c
+        
 
   
 
