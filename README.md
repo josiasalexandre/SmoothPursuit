@@ -1,6 +1,6 @@
 Smooth Pursuit Eye Movements - DSP Implementation of the Krauzlis and Lisberger Model
 
-It's a simple project just to evaluate the Krauzlis and Lisberger Smooth Pursuit Eye Movements Control Model.
+It's a simple project just to evaluate the Krauzlis and Lisberger Smooth Pursuit Eye Movements Control Model in a object tracking experiment.
 
 Usage:
 
