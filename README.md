@@ -4,15 +4,15 @@ It's a simple project just to evaluate the Krauzlis and Lisberger Smooth Pursuit
 
 Usage:
 
-  $ program input_video frame_rate output_video groundtruth
+    $ program input_video frame_rate output_video groundtruth
   
   The groundtruth file is optional and when provided it must follow the pattern:
   
-  p1_x p1_y p2_x p2_y
-  p1_x p1_y p2_x p2_y
-  p1_x p1_y p2_x p2_y
-  p1_x p1_y p2_x p2_y
-  ...
+    p1_x p1_y p2_x p2_y
+    p1_x p1_y p2_x p2_y
+    p1_x p1_y p2_x p2_y
+    p1_x p1_y p2_x p2_y
+    ...
   
   Each line corresponds to a frame, so the first line is the ground truth related to the first frame.
   
