@@ -102,8 +102,7 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
                     if(nullptr != vsd)
                     {
                         fps = vsd->get_fps();
-
-                       dt = 1.0/fps;
+                        dt = 1.0/fps;
                     }
                 }
             }
@@ -142,9 +141,7 @@ class OpticalFlowCPUDevice : virtual public SingleInputDevice<cv::Mat, cv::Point
                                 if (std::fabs(mean.x) < std::fabs(row[j].x)) { mean.x = row[j].x; }
                                 if (std::fabs(mean.y) < std::fabs(row[j].y)){ mean.x = row[j].y; }
                             }
-
                         }
-
 
                         if (0 == flow.rows || 0 == flow.cols)
                         {

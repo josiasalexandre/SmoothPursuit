@@ -24,10 +24,7 @@ class TrapzIntegratorDevice : virtual public SingleInputDevice<cv::Point2f, cv::
         {
             // get the buffer addres
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer)
-            {
-                throw std::bad_alloc();
-            }
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // device reset

@@ -1,8 +1,9 @@
 #ifndef VELOCITY_INTERPOLATION_DEVICE_H
 #define VELOCITY_INTERPOLATION_DEVICE_H
 
-#include <opencv2/opencv.hpp>
+#include <iostream>
 
+#include <opencv2/opencv.hpp>
 #include <SingleInputDevice.hpp>
 
 enum InterpolationType {LINEAR_INTERPOLATION, QUADRATIC_INTERPOLATION};

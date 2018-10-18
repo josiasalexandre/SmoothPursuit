@@ -104,7 +104,6 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
         {
             return (float) 1e6/((float) rate);
         }
-
 };
 
 #endif

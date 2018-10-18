@@ -5,6 +5,7 @@ template<typename T, unsigned int LENGTH>
 class RingBuffer
 {
     private:
+
         // our circular buffer
         T buffer[LENGTH];
 
@@ -16,8 +17,6 @@ class RingBuffer
 
         // the buffer acess mutex
         std::mutex buffer_mutex;
-
-    public:
 };
 
 #endif

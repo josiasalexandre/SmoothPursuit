@@ -13,7 +13,7 @@ class OpticalFlowGpuDevice : virtual public SingleInputDevice<cv::Mat3b, std::ve
 
     public:
 
-        // basic constructor
+    // basic constructor
     OpticalFlowGpuDevice(cv::Mat3b v_null);
 
 };

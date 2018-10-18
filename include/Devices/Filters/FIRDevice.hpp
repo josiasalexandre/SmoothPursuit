@@ -52,7 +52,7 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
             double val, tmp;
 
             switch (w_type)
-            {                           
+            {
                 case BARTLETT_WINDOW:
                     for (int n = 0; n <= halfLength; n++)
                     {
@@ -87,10 +87,10 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
                     }
                     break;
                 default:
-                    break;            
+                    break;
             }
 
-            for (int i = 0; i < TAPS; i++) { normalization += coeff[i]; } 
+            for (int i = 0; i < TAPS; i++) { normalization += coeff[i]; }
 
             normalization = 1.0/normalization;
 
@@ -120,24 +120,16 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
             if (halfLength*2 != TAPS)
             {
                 val = 2.0*ft;
-
                 // If we want a high pass filter, subtract sinc function from a dirac pulse
-                if (HIGH_PASS == f_type)
-                {
-                    val = 1.0 - val;
-                }
-
+                if (HIGH_PASS == f_type) { val = 1.0 - val; }
                 coeff[halfLength] = val;
             }
             else if (HIGH_PASS == f_type)
             {
-                // problem!!!!
                 throw std::invalid_argument("For high pass filter, coeff length must be odd");
             }
 
-            if (HIGH_PASS == f_type)
-            {
-                ft = -ft;            }
+            if (HIGH_PASS == f_type) { ft = -ft; }
 
             // Calculate taps
             // Due to symmetry, only need to calculate half the coeff
@@ -196,10 +188,7 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
                 double val = 2.0*(ft2 - ft1);
 
                 // If we want a high pass filter, subtract sinc function from a dirac pulse
-                if (BAND_STOP == f_type)
-                {
-                    val = 1.0 - val;
-                }
+                if (BAND_STOP == f_type) { val = 1.0 - val; }
 
                 coeff[halfLength] = val;
             }
@@ -278,9 +267,9 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
             coeff_index = 0;
 
             // first cycle
+            // convolution
             while(0 <= buffer_index)
             {
-                // convolution
                 output += special_buffer[buffer_index--]*coeff[coeff_index++];
             }
 
@@ -288,28 +277,20 @@ class FIRDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
             buffer_index = TAPS - 1;
 
             // second cycle
+            // convolution
             while(TAPS > coeff_index)
             {
-                // convolution
                 output += special_buffer[buffer_index--]*coeff[coeff_index++];
             }
 
             // increments the offset and verify the overlapping case
-            if (TAPS <= ++offset)
-            {
-                // reset the
-                offset = 0;
-            }
+            if (TAPS <= ++offset) { offset = 0; }
 
-            if (low_pass_output.is_open() && 80 < TAPS)
-            {
-                low_pass_output << " " << output.x;
-            }
+            if (low_pass_output.is_open() && 80 < TAPS) { low_pass_output << " " << output.x; }
 
             // send the
             DeviceOutput<cv::Point2f>::send(output);
         }
-
 };
 
 #endif

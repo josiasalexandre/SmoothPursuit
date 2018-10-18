@@ -92,7 +92,6 @@ class ImageViewerDevice : virtual public OutputSignalDevice<cv::Mat>
             }
             else
             {
-
                 if (img_view_mutex.try_lock())
                 {
                     // a new thread!

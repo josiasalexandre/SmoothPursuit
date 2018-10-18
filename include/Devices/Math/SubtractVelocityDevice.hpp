@@ -28,7 +28,7 @@ class SubtractVelocityDevice : virtual public MultInputDevice<T, T, 2>
             // send the result to external devices
             DeviceOutput<T>::send(result);
         };
-        
+
         // implement the reset function
         virtual void reset()
         {

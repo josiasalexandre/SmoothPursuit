@@ -100,15 +100,8 @@ cv::Point2f OpticalFlowCPU::run(cv::Mat new_gray)
 
                 if (0 != flow.rows && 0 != flow.cols)
                 {
-                    if (gaussian.rows > flow.rows)
-                    {
-                        k_h = flow.rows;
-                    }
-
-                    if (gaussian.cols > flow.cols)
-                    {
-                        k_w = flow.cols;
-                    }
+                    if (gaussian.rows > flow.rows) { k_h = flow.rows; }
+                    if (gaussian.cols > flow.cols) { k_w = flow.cols; }
 
                     if (k_h < k_w)
                     {

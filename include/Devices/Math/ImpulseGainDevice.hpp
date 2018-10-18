@@ -1,6 +1,8 @@
 #ifndef IMPULSE_GAIN_DEVICE_H
 #define IMPULSE_GAIN_DEVICE_H
 
+#include <cmath>
+
 #include <opencv2/opencv.hpp>
 
 #include <SingleInputDevice.hpp>

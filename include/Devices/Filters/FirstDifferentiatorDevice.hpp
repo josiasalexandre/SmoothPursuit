@@ -23,11 +23,7 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
         {
             // get the base class circular buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer)
-            {
-                throw std::bad_alloc();
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // device reset

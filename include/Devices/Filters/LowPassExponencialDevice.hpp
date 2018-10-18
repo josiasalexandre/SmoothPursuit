@@ -1,6 +1,7 @@
 #ifndef LOW_PASS_EXPONENTIAL_DEVICE_H
 #define LOW_PASS_EXPONENTIAL_DEVICE_H
 
+#include <cmath>
 #include <opencv2/opencv.hpp>
 
 #include <SingleInputDevice.hpp>
@@ -32,7 +33,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), T(0.001), tau(0.015), old_value(0.0, 0.0), buffer(nullptr)
         {
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            
+
             if (nullptr == buffer) { throw std::bad_alloc(); }
 
             alpha =  std::exp(-T/tau);
@@ -44,7 +45,7 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), T(sampling_rate), tau(time), old_value(0.0, 0.0), buffer(nullptr)
         {
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            
+
             if (nullptr == buffer) { throw std::bad_alloc(); }
 
             alpha =  std::exp(-T/tau);
