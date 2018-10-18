@@ -12,8 +12,8 @@
 #include <DSPSystem.hpp>
 
 
-class ImageMotionModel {
-
+class ImageMotionModel
+{
     private:
 
         // the video capture device

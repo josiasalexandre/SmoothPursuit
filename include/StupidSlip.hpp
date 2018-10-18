@@ -10,8 +10,8 @@
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/tracking.hpp>
 
-class StupidSlip {
-
+class StupidSlip
+{
     private:
 
         // the max value
@@ -40,8 +40,6 @@ class StupidSlip {
 
         // calculates the displacement from the fovea's center using the TLD tracker algorithm
         cv::Rect2i tld_displacement(cv::Mat frame, cv::Rect);
-
-
 };
 
 #endif

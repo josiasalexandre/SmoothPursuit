@@ -2,8 +2,8 @@
 #define NODE_H
 
 template<typename T>
-class Node {
-
+class Node
+{
     public:
 
         // the prev node

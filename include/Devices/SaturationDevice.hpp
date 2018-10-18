@@ -5,8 +5,8 @@
 
 #include <SingleInputDevice.hpp>
 
-class SaturationDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
-
+class SaturationDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
+{
     private:
 
         CircularBuffer<cv::Point2f> *buffer;
@@ -19,41 +19,39 @@ class SaturationDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
         // basic constructor
         SaturationDevice(float value) :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            saturation(value), buffer(nullptr)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), saturation(value), buffer(nullptr)
         {
-
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-                throw std::bad_alloc();
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // overriding the main method
-        virtual void run() {
-
+        virtual void run()
+        {
             output = buffer->pop();
 
-            if (saturation < output.x) {
+            if (saturation < output.x)
+            {
                 output.x = saturation;
-            } else if (-saturation > output.x) {
+            }
+            else if (-saturation > output.x)
+            {
                 output.x = -saturation;
             }
 
 
-            if (saturation < output.y) {
+            if (saturation < output.y)
+            {
                 output.y = saturation;
-            } else if (-saturation > output.y) {
+            }
+            else if (-saturation > output.y)
+            {
                 output.y = -saturation;
             }
 
             // send the output to external devics
             DeviceOutput<cv::Point2f>::send(output);
-
-
         }
-
 };
 
 #endif

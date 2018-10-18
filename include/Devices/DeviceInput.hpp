@@ -8,8 +8,8 @@
 #include <BaseDevice.hpp>
 
 template<typename T>
-class DeviceInput : virtual public BaseDevice {
-
+class DeviceInput : virtual public BaseDevice
+{
     public:
 
         virtual ~DeviceInput() {}

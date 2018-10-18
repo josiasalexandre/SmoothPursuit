@@ -2,10 +2,9 @@
 #define RING_BUFFER_H
 
 template<typename T, unsigned int LENGTH>
-class RingBuffer {
-
+class RingBuffer
+{
     private:
-
         // our circular buffer
         T buffer[LENGTH];
 
@@ -19,9 +18,6 @@ class RingBuffer {
         std::mutex buffer_mutex;
 
     public:
-
-        // 
-
 };
 
 #endif

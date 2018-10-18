@@ -5,8 +5,8 @@
 
 #include <SingleInputDevice.hpp>
 
-class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
-
+class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
+{
     private:
 
         // alpha multiplier
@@ -22,30 +22,26 @@ class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
         // basic constructor
         LinearGainDevice(float a) :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            alpha(a)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), alpha(a)
         {
-
             // get the buffer address
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-
         }
 
         // the reset
-        virtual void reset() {
-
+        virtual void reset()
+        {
             // set the output to zero
             output.x = 0.0;
             output.x = 0.0;
 
             // clear the buffer
             buffer->clear();
-
         }
 
         // the main method
-        virtual void run() {
-
+        virtual void run()
+        {
             // get the new value
             output = buffer->pop();
 
@@ -53,9 +49,7 @@ class LinearGainDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point
 
             // send the output value to external devices
             DeviceOutput<cv::Point2f>::send(output);
-
         }
-
 };
 
 #endif

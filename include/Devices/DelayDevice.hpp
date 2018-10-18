@@ -5,8 +5,8 @@
 
 #include <SingleInputDevice.hpp>
 
-class DelayDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
-
+class DelayDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
+{
     private:
 
         // the time delay
@@ -22,56 +22,47 @@ class DelayDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
 
         // basic constructor
         DelayDevice(float t) :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            buffer(nullptr), output(0.0), time(t)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), buffer(nullptr), output(0.0), time(t)
         {
-
             // get the buffer address
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (buffer == nullptr) {
-
+            if (buffer == nullptr)
+            {
                 throw std::bad_alloc();
-
             }
-
         }
 
         // device reset
-        virtual void reset() {
-
+        virtual void reset()
+        {
             // set the output to zero
             output.x = 0.0;
             output.y = 0.0;
 
             // clear the entire input buffer
             buffer->clear();
-
         }
 
         // the main method
-        virtual void run() {
-
+        virtual void run()
+        {
             // update the output
             output.x = 0.0;
             output.y = 0.0;
 
-            if (1.0 >= time) {
-
-                // get the new value
+            if (1.0 >= time) 
+            {
                 output = buffer->pop();
-
-            } else {
-
+            }
+            else 
+            {
                 time -= 1.0;
-
             }
 
             // send the output to external devices
             DeviceOutput<cv::Point2f>::send(output);
-//             std::cout << std::endl << "Output: " << output << std::endl;
-
+            // std::cout << std::endl << "Output: " << output << std::endl;
         }
-
 };
 
 #endif

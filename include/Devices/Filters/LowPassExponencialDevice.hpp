@@ -6,8 +6,8 @@
 #include <SingleInputDevice.hpp>
 
 // simpler IIR filter implementation -> the exponencial filter
-class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
-
+class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
+{
     private:
 
         // the time constant
@@ -29,41 +29,26 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
 
         // basic constructor
         LowPassExponentialDevice() :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            T(0.001), tau(0.015), old_value(0.0, 0.0), buffer(nullptr)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), T(0.001), tau(0.015), old_value(0.0, 0.0), buffer(nullptr)
         {
-
-
-            //
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
+            
+            if (nullptr == buffer) { throw std::bad_alloc(); }
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
-
         }
 
         // basic constructor
         LowPassExponentialDevice(float sampling_rate, float time) :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)),
-            T(sampling_rate), tau(time), old_value(0.0, 0.0), buffer(nullptr)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(cv::Point2f(0.0, 0.0)), T(sampling_rate), tau(time), old_value(0.0, 0.0), buffer(nullptr)
         {
-
-            // get the buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
+            
+            if (nullptr == buffer) { throw std::bad_alloc(); }
 
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
-
         }
 
         // basic constructor
@@ -74,18 +59,12 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             old_value(0.0, 0.0),
             buffer(nullptr)
         {
-
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
 
             // get the buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // basic constructor
@@ -96,23 +75,17 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
             old_value(0.0, 0.0),
             buffer(nullptr)
         {
-
             alpha =  std::exp(-T/tau);
             alpha_1 = 1-alpha;
 
             // get the buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // device reset
-        virtual void reset() {
-
+        virtual void reset()
+        {
             // set the output to zero
             output.x = 0.0;
             output.y = 0.0;
@@ -123,12 +96,11 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
 
             // clear the entire input buffer
             buffer->clear();
-
         }
 
         // @override the run method
-        virtual void run() {
-
+        virtual void run()
+        {
             // get the value
             output = buffer->pop();
 
@@ -140,31 +112,23 @@ class LowPassExponentialDevice : virtual public SingleInputDevice<cv::Point2f, c
 
             // send to all external connected devices
             DeviceOutput<cv::Point2f>::send(output);
-
         }
 
         // update the tau
-        void update_tau(float time) {
-
+        void update_tau(float time)
+        {
             tau = time;
-
             alpha = std::exp(-T/tau);
-
             alpha_1 = 1 - alpha;
-
         }
 
         // update the sampling rate
-        void update_sampling_rate(float sampling_rate) {
-
+        void update_sampling_rate(float sampling_rate)
+        {
             T = sampling_rate;
-
             alpha = std::exp(-T/tau);
-
             alpha_1 = 1 - alpha;
-
         }
-
 };
 
 #endif

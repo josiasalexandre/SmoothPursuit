@@ -8,7 +8,8 @@
 #define MAX_BUFFER_SIZE 1024
 
 template<typename T>
-class CircularBuffer {
+class CircularBuffer
+{
 
     private:
 
@@ -29,59 +30,43 @@ class CircularBuffer {
 
     public:
 
-        // basic constructor withoud the null value param
-        CircularBuffer() : max_length(MIN_BUFFER_SIZE), head(0), tail(0) {
-
-            // allocates the buffer
+        // basic constructor without the null value param
+        CircularBuffer() : max_length(MIN_BUFFER_SIZE), head(0), tail(0)
+        {
             buffer = new T[max_length]();
-
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // basic constructor
-        CircularBuffer(T v_null) : max_length(MIN_BUFFER_SIZE), head(0), tail(0), null_value(v_null) {
-
-            // allocates the buffer
+        CircularBuffer(T v_null) : max_length(MIN_BUFFER_SIZE), head(0), tail(0), null_value(v_null)
+        {
             buffer = new T[max_length]();
-
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
-
+            if (nullptr == buffer) { throw std::bad_alloc(); }
         }
 
         // another basic constructor
-        CircularBuffer(unsigned int buffer_max_length, T v_null) : max_length(buffer_max_length), head(0), tail(0), null_value(v_null) {
-
+        CircularBuffer(unsigned int buffer_max_length, T v_null) : max_length(buffer_max_length), head(0), tail(0), null_value(v_null)
+        {
             // verify buffer max_length
-            if (MIN_BUFFER_SIZE > max_length) {
-
+            if (MIN_BUFFER_SIZE > max_length)
+            {
                 max_length = MIN_BUFFER_SIZE;
-
-            } else if (MAX_BUFFER_SIZE < max_length) {
-
+            }
+            else if (MAX_BUFFER_SIZE < max_length)
+            {
                 max_length = MAX_BUFFER_SIZE;
-
             }
 
-            // allocates the buffer
             buffer = new T[max_length]();
-            if (nullptr == buffer) {
+            if (nullptr == buffer)
+            {
                 throw std::bad_alloc();
             }
-
         }
 
         // copy constructor
-        CircularBuffer(const CircularBuffer<T> &cb) : buffer(nullptr) {
-
+        CircularBuffer(const CircularBuffer<T> &cb) : buffer(nullptr)
+        {
             // lock the external circular buffer
             cb.buffer_mutex.lock();
 
@@ -90,82 +75,66 @@ class CircularBuffer {
             head = tail = 0;
             null_value = cb.null_value;
 
-             // allocates the buffer
             buffer = new T[max_length]();
-
-            if (nullptr == buffer) {
-
-                throw std::bad_alloc();
-
-            }
+            if (nullptr == buffer) { throw std::bad_alloc(); }
 
             // unlock the external circular buffer
             cb.buffer_mutex.unlock();
-
         }
 
         // basic destructor
-        ~CircularBuffer() {
-
-            if (nullptr != buffer) {
-
-                delete [] buffer;
-
-            }
-
+        ~CircularBuffer()
+        {
+            if (nullptr != buffer) { delete [] buffer; }
         }
 
         // push new element
-        void push(T e) {
-
+        void push(T e)
+        {
             // lock the buffer
             buffer_mutex.lock();
 
             // verify if we can push something at the next position
-            if ((head + 1) == tail || (head + 1 == max_length && 0 == tail)) {
-
+            if ((head + 1) == tail || (head + 1 == max_length && 0 == tail))
+            {
                 // insert the new element at the head position but dont increment the head
                 buffer[head] = e;
 
-            } else {
-
+            }
+            else
+            {
                 // insert the new element at the head position and increments the head index
                 buffer[head++] = e;
-
                 // verify the limit
-                if (head >= max_length) {
-
+                if (head >= max_length)
+                {
                     //reset
                     head = 0;
-
                 }
-
             }
 
             // unlock the buffer
             buffer_mutex.unlock();
-
         }
 
         // pop new element
-        T pop() {
-
+        T pop()
+        {
             T e = null_value;
 
             // lock the buffer
             buffer_mutex.lock();
 
             // is empty?
-            if (tail != head) {
-
+            if (tail != head)
+            {
                 // get the element at the tail position
                 e = buffer[tail];
 
                 tail++;
 
-                // verify the limit
-                if (max_length <= tail) {
-
+                if (max_length <= tail)
+                {
                     //reset
                     tail = 0;
 
@@ -181,8 +150,8 @@ class CircularBuffer {
         }
 
         // get the current element (tail index)
-        T get_current() {
-
+        T get_current()
+        {
             T e = null_value;
 
             // lock the buffer
@@ -190,30 +159,20 @@ class CircularBuffer {
 
 
             // is empty?
-            if (tail != head) {
-
-                // get the element at the tail position
-                e = buffer[tail];
-
-            }
+            if (tail != head) { e = buffer[tail]; }
 
             // unlock the buffer
             buffer_mutex.unlock();
 
             return e;
-
         }
 
         // the circular buffer max_length
-        unsigned int get_length() {
-
-            return max_length;
-
-        }
+        unsigned int get_length() { return max_length; }
 
         // is empty?
-        bool empty() {
-
+        bool empty()
+        {
             bool status;
 
             // lock the buffer
@@ -226,12 +185,11 @@ class CircularBuffer {
 
             // if head and tail are equal then this buffer is empty
             return status;
-
         }
 
         // is this ring buffer really full?
-        bool full() {
-
+        bool full()
+        {
             bool status;
 
             // lock the buffer
@@ -248,34 +206,16 @@ class CircularBuffer {
         }
 
         // set the current null value
-        void set_null_value(T v_null) {
-
-            // update the null_value
-            null_value = v_null;
-
-        }
+        void set_null_value(T v_null) {  null_value = v_null; }
 
         // get the current null value
-        T get_null_value() {
-
-            return null_value;
-
-        }
+        T get_null_value() { return null_value; }
 
         // get the queue size
-        unsigned int get_size() {
-
-            return std::abs(head - tail);
-
-        }
+        unsigned int get_size() { return std::abs(head - tail); }
 
         // clear the entire buffer
-        void clear() {
-
-            tail = head;
-
-        }
-
+        void clear() { tail = head; }
 };
 
 #endif

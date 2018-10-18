@@ -5,8 +5,8 @@
 
 #include <SingleInputDevice.hpp>
 
-class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f> {
-
+class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, cv::Point2f>
+{
     private:
 
         // the special buffer
@@ -15,28 +15,24 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
         // base class circular buffer pointer
         CircularBuffer<cv::Point2f> *buffer;
 
-
     public:
 
         // basic constructor
         FirstDifferentiatorDevice(cv::Point2f v_null) :
-            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(v_null),
-            old_value(0.0, 0.0), buffer(nullptr)
+            SingleInputDevice<cv::Point2f, cv::Point2f>::SingleInputDevice(v_null), old_value(0.0, 0.0), buffer(nullptr)
         {
-
             // get the base class circular buffer
             buffer = SingleInputDevice<cv::Point2f, cv::Point2f>::get_buffer();
-            if (nullptr == buffer) {
-
+            if (nullptr == buffer)
+            {
                 throw std::bad_alloc();
-
             }
 
         }
 
         // device reset
-        virtual void reset() {
-
+        virtual void reset()
+        {
             // set the output to zero
             output.x = 0.0;
             output.y = 0.0;
@@ -47,11 +43,11 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
 
             // clear the entire input buffer
             buffer->clear();
-
         }
-        // the main method
-        virtual void run() {
 
+        // the main method
+        virtual void run()
+        {
             // get the new value
             new_value = buffer->pop();
 
@@ -63,10 +59,7 @@ class FirstDifferentiatorDevice : virtual public SingleInputDevice<cv::Point2f, 
 
             // send the value to external devices
             DeviceOutput<cv::Point2f>::send(output);
-
-
         }
-
 };
 
 #endif

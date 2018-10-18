@@ -25,8 +25,8 @@
 #include <ImpulseGainDevice.hpp>
 #include <SaturationDevice.hpp>
 
-class DSPSystem {
-
+class DSPSystem
+{
     private:
 
         // the system output
@@ -39,8 +39,9 @@ class DSPSystem {
         CircularBuffer<cv::Point2f> *input_buffer;
 
         // build the entire system
-        void build_system() {
-
+        // THE SPEM MODEL
+        void build_system()
+        {
             /* TODO */
             /*
              *  We should build some Parser and get the configuration from an external file (XML? Json?)
@@ -182,165 +183,105 @@ class DSPSystem {
             on_devices.push_back(plant);
             // on_devices.push_back(feedback_gain);
             output_devices.push_back(system_output);
-
         }
 
     public:
 
         // the basic constructor
-        DSPSystem () : output(0), input_buffer(nullptr) {
-
-            // build the entire system
-            build_system();
-
-        }
+        DSPSystem () : output(0), input_buffer(nullptr) { build_system(); }
 
         // the basic destructor
-        ~DSPSystem () {
-
-        }
+        ~DSPSystem () {}
 
 
         // reset the entire system
-        void reset() {
-
+        void reset()
+        {
             BaseDevice *dev;
 
             // run all the outputs
-            while(output_devices.iterator()) {
-
+            while(output_devices.iterator())
+            {
                 dev = output_devices.current_element();
-
-                if (nullptr != dev) {
-                    dev->reset();
-                }
-
+                if (nullptr != dev) { dev->reset(); }
             }
 
             // run all the iddle_devices
-            while(iddle_devices.iterator()) {
-
+            while(iddle_devices.iterator())
+            {
                 dev = iddle_devices.current_element();
-
-                if (nullptr != dev) {
-                    dev->reset();
-                }
-
+                if (nullptr != dev) { dev->reset(); }
             }
 
             // run all the on_devices
-            while(on_devices.iterator()) {
-
+            while(on_devices.iterator())
+            {
                 dev = on_devices.current_element();
-
-                if (nullptr != dev) {
-                    dev->reset();
-                }
-
+                if (nullptr != dev){ dev->reset(); }
             }
 
             // run all the input_devices
-            while(input_devices.iterator()) {
-
+            while(input_devices.iterator())
+            {
                 dev = input_devices.current_element();
-
-                if (nullptr != dev) {
-
-                    dev->reset();
-
-                }
-
-
+                if (nullptr != dev) { dev->reset(); }
             }
-
-
         }
 
         // remove all devices
-        void disconnect_all() {
-
+        void disconnect_all()
+        {
             BaseDevice *dev;
 
             // disconnects all input_devices
-            while(!input_devices.empty()) {
-
+            while(!input_devices.empty())
+            {
                 // get the first node element
                 dev = input_devices.pop_front();
 
-                if (nullptr != dev) {
-
-                    // delete the node
+                if (nullptr != dev)
+                {
+                    // deallocate the current node
                     delete dev;
-
                 }
-
             }
 
-            // destroy all the iddle_dsp
-            while(!iddle_devices.empty()) {
-
+            // destroy all the iddle dsp devices
+            while(!iddle_devices.empty())
+            {
                 // get the first node element
                 dev = iddle_devices.pop_front();
-
-                if (nullptr != dev) {
-
-                    // delete the node
-                    delete dev;
-
-                }
-
+                if (nullptr != dev) { delete dev; }
             }
 
             // destroy all the running_dsp
-            while(!on_devices.empty()) {
-
+            while(!on_devices.empty())
+            {
                 // get the first node element
                 dev = on_devices.pop_front();
-
-                if (nullptr != dev) {
-
-                    // delete the node
-                    delete dev;
-
-                }
-
+                if (nullptr != dev) { delete dev; }
             }
 
             // destroy all the running_devices
-            while(!running_devices.empty()) {
-
+            while(!running_devices.empty())
+            {
                 // get the first node element
                 dev = running_devices.pop_front();
-
-                if (nullptr != dev) {
-
-                    // delete the node
-                    delete dev;
-
-                }
-
+                if (nullptr != dev) { delete dev; }
             }
 
             // destroy all the output_devices
-            while(!output_devices.empty()) {
-
+            while(!output_devices.empty())
+            {
                 // get the first element node
                 dev = output_devices.pop_front();
-
-                if (nullptr != dev) {
-
-                    // delete the node
-                    delete dev;
-
-                }
-
+                if (nullptr != dev) { delete dev; }
             }
-
         }
 
         // the main method
-        std::vector<cv::Point2f> run(std::vector<cv::Point2f> &input) {
-
+        std::vector<cv::Point2f> run(std::vector<cv::Point2f> &input)
+        {
             // get the input size
             int input_size = input.size();
 
@@ -350,110 +291,82 @@ class DSPSystem {
             BaseDevice *dev = nullptr;
 
             // testing, the limit should be better than this
-            for(int i = 0; i < input_size; i++) {
-
+            for(int i = 0; i < input_size; i++)
+            {
                 // send the input to the first device in the list
                 input_buffer->push(input[i]);
 
                 // run all the outputs
-                while(output_devices.iterator()) {
-
+                while(output_devices.iterator())
+                {
                     dev = output_devices.current_element();
-
-                    if (nullptr != dev) {
-                        dev->run();
-                    }
-
+                    if (nullptr != dev) { dev->run(); }
                 }
 
                 // run all the iddle_devices
-                while(!iddle_devices.empty()) {
-
+                while(!iddle_devices.empty())
+                {
                     dev = iddle_devices.pop_front();
 
-                    if (nullptr != dev) {
-
+                    if (nullptr != dev)
+                    {
                         // append to running_devices
                         running_devices.push_back(dev);
-
                         dev->run();
-
                     }
-
                 }
 
                 // run all the on_devices
-                while(!on_devices.empty()) {
-
+                while(!on_devices.empty())
+                {
                     dev = on_devices.pop_front();
-
-                    if (nullptr != dev) {
-
+                    if (nullptr != dev)
+                    {
                         // append to running_devices
                         running_devices.push_back(dev);
-
                         dev->run();
-
                     }
-
                 }
 
                 dev = nullptr;
 
                 // run all the input_devices
-                while(input_devices.iterator()) {
-
+                while(input_devices.iterator())
+                {
                     dev = input_devices.current_element();
-
-                    if (nullptr != dev) {
-
-                        dev->run();
-
-                    }
-
-
+                    if (nullptr != dev) { dev->run(); }
                 }
 
                 // return the all the running devices to appropriate lists
-                while (!running_devices.empty()) {
-
+                while (!running_devices.empty())
+                {
                     dev = running_devices.pop_front();
 
-                    if (nullptr != dev) {
-
-                        if (Device_ON == dev->get_device_status()) {
-
+                    if (nullptr != dev)
+                    {
+                        if (Device_ON == dev->get_device_status())
+                        {
                             // append to on_devices
                             on_devices.push_back(dev);
-
-                        } else {
-
+                        }
+                        else
+                        {
                             // append to iddle_devices
                             iddle_devices.push_back(dev);
-
                         }
-
                     }
-
                 }
 
                 // reset the dev pointer
                 dev = nullptr;
-
             }
 
             // return the output vector
             return output;
-
         };
 
         // get the input buffer
-        CircularBuffer<cv::Point2f>* get_input_buffer() {
-
-            return input_buffer;
-
-        }
-
+        CircularBuffer<cv::Point2f>* get_input_buffer() { return input_buffer; }
 };
 
 #endif

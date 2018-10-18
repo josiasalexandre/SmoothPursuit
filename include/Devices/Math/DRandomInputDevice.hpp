@@ -4,8 +4,8 @@
 #include <random>
 #include <InputSignalDevice.hpp>
 
-class DRandomInputDevice : virtual public InputSignalDevice<double> {
-
+class DRandomInputDevice : virtual public InputSignalDevice<double>
+{
     private:
 
         // the uniform real distribution
@@ -20,32 +20,27 @@ class DRandomInputDevice : virtual public InputSignalDevice<double> {
         DRandomInputDevice(double left, double right) : generator(std::random_device {} ()), distribution(left, right) {}
 
         // the main device method
-        virtual void run() {
-
+        virtual void run()
+        {
             double rand = distribution(generator);
 
             // send the value to all external devices
-            if (0 < DeviceOutput<double>::output.size()) {
-
+            if (0 < DeviceOutput<double>::output.size())
+            {
                 // lock the output pointers
                 DeviceOutput<double>::output_mutex.lock();
 
                 int out_size = DeviceOutput<double>::output.size();
 
-                for (int i = 0; i < out_size; i++) {
-
+                for (int i = 0; i < out_size; i++)
+                {
                     // send the value
                     DeviceOutput<double>::output[i].first->push(rand);
-
                 }
-
                 // unlock the output pointers
                 DeviceOutput<double>::output_mutex.unlock();
-
             }
-
         };
-
 };
 
 #endif

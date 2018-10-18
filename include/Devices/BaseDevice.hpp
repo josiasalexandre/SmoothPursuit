@@ -3,8 +3,8 @@
 
 enum DeviceStatus { Device_ON, Device_OFF};
 
-class BaseDevice {
-
+class BaseDevice
+{
     private:
 
         // on/off
@@ -24,25 +24,16 @@ class BaseDevice {
         virtual void disconnect(BaseDevice *) = 0;
 
         // update the device status
-        virtual void update_status(DeviceStatus ds) {
-
-            status = ds;
-
-        }
+        virtual void update_status(DeviceStatus ds) { status = ds; }
 
         // get the device status
-        virtual DeviceStatus get_device_status() {
-
-            return status;
-
-        }
+        virtual DeviceStatus get_device_status() { return status; }
 
         // device reset
         virtual void reset() = 0;
 
         // the main device method
         virtual void run() = 0;
-
 };
 
 #endif

@@ -7,8 +7,8 @@
 
 enum InterpolationType {LINEAR_INTERPOLATION, QUADRATIC_INTERPOLATION};
 
-class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f, std::vector<cv::Point2f>> {
-
+class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f, std::vector<cv::Point2f>>
+{
     private:
 
         // the base class circular buffer
@@ -27,8 +27,8 @@ class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f
         float fs, fps;
 
         // the linear interpolation method
-        void linear_interpolation() {
-
+        void linear_interpolation()
+        {
             unsigned int interp = (fs/fps) - 1;
             float a1, a2;
             cv::Point2f new_point;
@@ -45,17 +45,13 @@ class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f
             std::cout << std::endl << old << std::endl;
             std::cout << std::endl << current << std::endl;
 
-            for (int i = 1; i <= interp; i++) {
-
+            for (int i = 1; i <= interp; i++)
+            {
                 new_point.x = a1*(i*0.001) + old.x;
                 new_point.y = a2*(i*0.001) + old.y;
-
                 interpolated.push_back(new_point);
-
                 std::cout << std::endl << "i: " << i << " -> " << new_point << std::endl;
-
             }
-
         }
 
     public:
@@ -70,29 +66,23 @@ class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f
             fs(fs_rate),
             fps(fr)
         {
-
-            // get the input buffer pointer
             buffer = SingleInputDevice<cv::Point2f, std::vector<cv::Point2f>>::get_buffer();
-
         }
 
         // the main method
-        virtual void run() {
-
-            // get the new value
+        virtual void run()
+        {
             current = buffer->pop();
-
-            //
-            switch(type) {
-
+            switch(type)
+            {
                 case LINEAR_INTERPOLATION:
                     linear_interpolation();
                     break;
                 case QUADRATIC_INTERPOLATION:
+                    // TODO
                     break;
                 default:
                     break;
-
             }
 
             // send the interpolated signal
@@ -100,9 +90,7 @@ class VelocityInterpolationDevice : virtual public SingleInputDevice<cv::Point2f
 
             // update de old value
             old = current;
-
         }
-
 };
 
 #endif

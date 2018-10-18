@@ -9,8 +9,8 @@
 #include <InputSignalDevice.hpp>
 #include <VideoSignalDevice.hpp>
 
-class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtual VideoSignalDevice {
-
+class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtual VideoSignalDevice
+{
     private:
 
         // the current output buffer refference
@@ -28,111 +28,81 @@ class InputVideoDevice : public virtual InputSignalDevice<cv::Mat>, public virtu
     public:
 
         // basic constructor - camera id
-        InputVideoDevice(int id) : video(id) {
-
-            if (!video.isOpened()) {
-
-                // throw an exception
-                throw std::invalid_argument("invalid device id");
-
-            }
-
+        InputVideoDevice(int id) : video(id)
+        {
+            if (!video.isOpened()) { throw std::invalid_argument("invalid device id"); }
             rate = 1e6/25.0;
-
         }
 
         // basic constructor, now with fps
-        InputVideoDevice(int id, float fps) : video(id) {
+        InputVideoDevice(int id, float fps) : video(id)
+        {
+            if (!video.isOpened()) { throw std::invalid_argument("invalid device id"); }
 
-            if (!video.isOpened()) {
-
-                // throw an exception
-                throw std::invalid_argument("invalid device id");
-
-            }
-
-            if (0.0 <= fps) {
-
+            if (0.0 <= fps)
+            {
                 rate = 1e6/25;
-
-            } else {
-
+            }
+            else
+            {
                 rate = 1e6/fps;
             }
-
         }
 
         // basic constructor- filename
-        InputVideoDevice(const std::string filename, float fps) : video(filename) {
+        InputVideoDevice(const std::string filename, float fps) : video(filename)
+        {
+            if (!video.isOpened()) { throw std::invalid_argument("unable to open the file"); }
 
-            if (!video.isOpened()) {
-
-                // throw an exception
-                throw std::invalid_argument("unable to open the file");
-
-            }
-
-            if (0.0 <= fps) {
-
+            if (0.0 <= fps)
+            {
                 rate = 1e6/25;
-
-            } else {
-
-                rate = 1e6/fps;
-
             }
-
+            else
+            {
+                rate = 1e6/fps;
+            }
         }
 
         // basid destructor
-        virtual ~InputVideoDevice () {
-
-            if (video.isOpened()) {
-
-                video.release();
-
-            }
-
+        virtual ~InputVideoDevice ()
+        {
+            if (video.isOpened()) { video.release(); }
         }
 
         // the main method
-        virtual void run() {
-
+        virtual void run()
+        {
             // get the first frame
             video >> frame;
 
-            if(!frame.empty()) {
-
+            if(!frame.empty())
+            {
                 // lock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.lock();
 
                 // send the current image to the output
                 unsigned int out_size = DeviceOutput<cv::Mat>::output.size();
 
-                if (0 < out_size) {
-
-                    for (int i = 0; i < out_size; i++) {
-
+                if (0 < out_size)
+                {
+                    for (int i = 0; i < out_size; i++)
+                    {
                         // send the image frames
                         DeviceOutput<cv::Mat>::output[i].first->push(frame);
-
                     }
-
                 }
 
                 // unlock the output vector
                 DeviceOutput<cv::Mat>::output_mutex.unlock();
-
             }
-
         }
 
         // @override the VideoSignalDevice method
         // get the frame rate
-        virtual float get_fps() {
-
+        virtual float get_fps()
+        {
             return (float) 1e6/((float) rate);
-
         }
 
 };

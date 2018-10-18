@@ -3,8 +3,6 @@
 
 #include <SingleInputDevice.hpp>
 
-class VelocityInputDevice : virtual public SingleInputDevice<> {
-
-};
+class VelocityInputDevice : virtual public SingleInputDevice<> {};
 
 #endif

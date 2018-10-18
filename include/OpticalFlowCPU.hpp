@@ -9,8 +9,8 @@
 
 enum OpticalFlow {OPTICAL_FLOW_FARNEBACK_CPU, OPTICAL_FLOW_LUKAS_KANADE_PYR_CPU};
 
-class OpticalFlowCPU {
-
+class OpticalFlowCPU
+{
     private:
 
         // the optical flow output
@@ -109,7 +109,6 @@ class OpticalFlowCPU {
 
         // reset the flag
         void init(cv::Mat);
-
 };
 
 #endif
